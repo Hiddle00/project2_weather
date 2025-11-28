@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>날씨 기반 음식 추천 & 지도 (SPA)</title>
+
+<!-- Kakao Maps API (여기에 본인 키 넣기) -->
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=REMOVED"></script>
+
+<style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial; }
+
+    /* 전체 레이아웃 */
+    .layout {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+    }
+
+    /* 좌측 패널 */
+    .sidebar {
+        width: 350px;
+        background: #f5f5f7;
+        padding: 20px;
+        border-right: 1px solid #ddd;
+        overflow-y: auto;
+    }
+
+    .sidebar h2 { margin-top:0; }
+
+    input, button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 15px;
+    }
+
+    button {
+        background: #2f80ed;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    button:hover { background: #1d5fcc; }
+
+    .card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        margin-top: 20px;
+    }
+
+    .title-small {
+        font-weight: bold;
+        margin-bottom: 10px;
+        font-size: 16px;
+    }
+
+    /* 우측 지도 */
+    #map {
+        flex-grow: 1;
+        height: 100vh;
+    }
+</style>
+</head>
+
+<body>
+<div class="layout">
+
+    <!-- 왼쪽 패널 -->
+    <div class="sidebar">
+        <h2><img src="emoji.png" height="30px" width="30px"> EZEN 뭐 먹지?</h2>
+
+        <input id="locationInput" name="locationInput" placeholder="예: 서울, 부산, New York">
+        <button onclick="loadAll()">조회하기</button>
+
+        <div id="weatherCard" class="card" style="display:none;">
+            <div class="title-small">🌤 현재 날씨</div>
+            기온: <span id="temp"></span>°C<br>
+            구름: <span id="cloud"></span>%<br>
+            강수량: <span id="rain"></span> mm<br>
+            습도: <span id="humidity"></span>%<br>
+        </div>
+
+        <div id="foodCard" class="card" style="display:none;">
+            <div class="title-small">🍜 추천 음식</div>
+            <p id="foodText"></p>
+        </div>
+
+        <div id="listCard" class="card" style="display:none;">
+            <div class="title-small">🍽 주변 음식점</div>
+            <ul id="foodList"></ul>
+        </div>
+    </div>
+
+    <!-- 오른쪽 지도 영역 -->
+    <div id="map"></div>
+
+</div>
+
+<!-- JS 영역 -->
+
+<script>
+let map;
+let markers = [];
+
+/* -----------------------------
+   1) 브라우저 위치 정보 요청
+--------------------------------*/
+function getUserLocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject("이 브라우저는 위치 정보를 지원하지 않습니다.");
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                resolve([lat, lon]);
+            },
+            (err) => {
+                reject("위치 정보 허용을 거부했습니다.");
+            }
+        );
+    });
+}
+
+/* -----------------------------
+   2) 날씨 API (예시)
+--------------------------------*/
+async function loadWeather(lat, lon) {
+    return {
+        temp: 15,
+        cloud: 60,
+        rain: 0,
+        humidity: 55
+    };
+}
+
+/* -----------------------------
+   3) 추천 음식 로직
+--------------------------------*/
+function recommendFood(w) {
+    if (w.temp < 10) return "따뜻한 국물 요리: 전골, 라멘, 우동";
+    if (w.rain > 1) return "비 오는 날엔 파전 + 막걸리!";
+    if (w.cloud > 70) return "든든한 음식: 카레, 찜닭";
+    return "가볍고 산뜻한 음식: 초밥, 샐러드";
+}
+
+/* -----------------------------
+   4) 주변 음식점 (Overpass API)
+--------------------------------*/
+async function loadRestaurants(lat, lon) {
+    const query = `
+        [out:json];
+        node["amenity"="restaurant"](around:1500, ${lat}, ${lon});
+        out;
+    `;
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: query
+    });
+    const data = await res.json();
+    return data.elements;
+}
+
+/* -----------------------------
+   5) 카카오 지도 표시
+--------------------------------*/
+function renderMap(lat, lon, restaurants) {
+
+    const center = new kakao.maps.LatLng(lat, lon);
+
+    if (!map) {
+        map = new kakao.maps.Map(document.getElementById('map'), {
+            center: center,
+            level: 4
+        });
+    } else {
+        map.setCenter(center);
+    }
+
+    markers.forEach(m => m.setMap(null));
+    markers = [];
+
+    // 사용자 위치 마커
+    const userMarker = new kakao.maps.Marker({
+        position: center,
+        map: map
+    });
+
+    const baseInfo = new kakao.maps.InfoWindow({
+        content: "<div style='padding:5px;'>📍 내 위치</div>"
+    });
+    baseInfo.open(map, userMarker);
+    markers.push(userMarker);
+
+    // 음식점 마커
+    restaurants.forEach(r => {
+        const pos = new kakao.maps.LatLng(r.lat, r.lon);
+        
+        const marker = new kakao.maps.Marker({
+            position: pos,
+            map: map
+        });
+
+        const name = r.tags.name || "이름 없음";
+
+        const info = new kakao.maps.InfoWindow({
+            content: `<div style='padding:5px;'>${name}</div>`
+        });
+
+        kakao.maps.event.addListener(marker, 'click', () => {
+            info.open(map, marker);
+        });
+
+        markers.push(marker);
+    });
+}
+
+/* -----------------------------
+   6) 전체 실행
+--------------------------------*/
+async function loadAll() {
+    try {
+        // 사용자 위치 요청
+        const [lat, lon] = await getUserLocation();
+
+        // 날씨
+        const weather = await loadWeather(lat, lon);
+
+        document.getElementById("temp").textContent = weather.temp;
+        document.getElementById("cloud").textContent = weather.cloud;
+        document.getElementById("rain").textContent = weather.rain;
+        document.getElementById("humidity").textContent = weather.humidity;
+        document.getElementById("weatherCard").style.display = "block";
+
+        // 음식 추천
+        const food = recommendFood(weather);
+        document.getElementById("foodText").textContent = food;
+        document.getElementById("foodCard").style.display = "block";
+
+        // 주변 음식점
+        const restaurants = await loadRestaurants(lat, lon);
+
+        // 리스트 표시
+        const ul = document.getElementById("foodList");
+        ul.innerHTML = "";
+        restaurants.forEach(r => {
+            const name = r.tags.name || "이름 없음";
+            ul.innerHTML += `<li>${name}</li>`;
+        });
+        document.getElementById("listCard").style.display = "block";
+
+        // 지도 표시
+        renderMap(lat, lon, restaurants);
+
+    } catch (e) {
+        alert("오류: " + e);
+    }
+}
+</script>
+
+</body>
+</html>
