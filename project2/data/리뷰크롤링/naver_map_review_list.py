@@ -63,7 +63,7 @@ df = pd.read_csv("filter_list.csv")
 
 rest_names = df["상호명"]
 
-repeat = rest_names[:1400]
+repeat = rest_names[4300:]
 
 failed_list = []
 
