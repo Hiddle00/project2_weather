@@ -5,7 +5,7 @@
 <title>날씨 기반 음식 추천 & 지도 (SPA)</title>
 
 <!-- Kakao Maps API -->
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey="></script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=13a7c79d6744c966b6143c018bc02957"></script>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -87,7 +87,7 @@ async function loadWeather(lat, lon) {
     if (mm < 40) { hh -= 1; if(hh<0){ hh=23; baseDate.setDate(baseDate.getDate()-1); } }
     const baseDateStr = baseDate.toISOString().slice(0,10).replace(/-/g,"");
     const baseTime = String(hh).padStart(2,"0") + "00";
-    const serviceKey = "REMOVED";  // api key
+    const serviceKey = "4e27024dbae820c5f2095321a677edb4c33c68bca0b1914488bde4db4fe5ed48";  // api key
     const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&dataType=JSON&base_date=${baseDateStr}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
     try {
         const res = await fetch(url);
