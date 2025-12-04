@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>날씨 기반 음식 추천 & 지도 (SPA)</title>
+
+<!-- Kakao Maps API -->
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=13a7c79d6744c966b6143c018bc02957"></script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="layout">
+    <!-- 왼쪽 사이드 -->
+    <div class="sidebar">
+
+        <!-- 타이틀  -->
+        <h2><img src="icons/emoji.png" height="30px" width="30px"> EZEN 뭐 먹지?</h2>
+
+        <!-- 검색 입력 -->
+        <input id="locationInput" name="locationInput" placeholder="예: OO동 or 음식점 이름">
+
+        <!-- 버튼누르면 loadAll함수 실행 -->
+        <button onclick="loadAll()">조회하기</button>
+
+        <!-- 날씨 영역 -->
+        <div id="weatherCard" class="weather-card" style="display:none;">
+
+            <img class="weather-bg-icon" id="weatherBgIcon" src="icons/sun.png">
+            <h3>현재 날씨</h3>
+            <div class="weather-main">
+                <img id="weatherIcon" class="weather-icon" src="icons/sun.png">
+                <div class="temp"><span id="temp"></span>°C</div>
+            </div>
+
+            <!-- 기상청api에서 받아온 값 출력 -->
+            <div class="weather-details">
+                <div class="weather-detail">
+                    <span id="cloud"></span>%<small>구름량</small>
+                </div>
+                <div class="weather-detail">
+                    <span id="rain"></span>mm<small>강수량</small>
+                </div>
+                <div class="weather-detail">
+                    <span id="humidity"></span>%<small>습도</small>
+                </div>
+            </div>
+        </div>
+    <!-- 추천 음식 카드 -->
+        <div id="foodCard" class="card" style="display:none;">
+            <div class="title-small">🍜 추천 음식</div>
+            <p id="foodText"></p>
+        </div>
+    <!-- 추천 음식점 목록 -->
+        <div id="listCard" class="card" style="display:none;">
+            <div class="title-small">🍽 주변 음식점</div>
+            <ul id="foodList"></ul>
+        </div>
+    </div>
+    <!-- 오른쪽 지도 영역 -->
+    <div id="map"></div>
+</div>
+
+<!-- 플로팅 패널 -->
+<div class="floating-panel" id="floatingPanel">
+    <button class="close-btn" onclick="closePanel()">×</button>
+    <h4>추천 음식</h4>
+    <div id="flotmenu"></div>
+</div>
+
+
+<script>
+let map;
+let markers = [];
+
+// 사용자 좌표 가져오기 (기존과 동일)
+async function getUserLocation() {
+    return new Promise((resolve) => {
+        // 정보를 불러오지 못하면 전주 시청으로 기본값 지정
+        if (!navigator.geolocation) resolve({lat:35.8242, lon:127.1480});
+        // 거부하면 전주시청으로 기본값 지정
+        else navigator.geolocation.getCurrentPosition(
+            pos => resolve({lat: pos.coords.latitude, lon: pos.coords.longitude}),
+            err => resolve({lat:35.8242, lon:127.1480})
+        );
+    });
+}
+
+// 기상청에서 날씨 불러오기 (기존과 동일)
+async function loadWeather(lat, lon) {
+    const { x: nx, y: ny } = dfsXyConv(lat, lon);
+    const now = new Date();
+    let baseDate = new Date(now);
+    let hh = now.getHours();
+    let mm = now.getMinutes();
+    if (mm < 40) { hh -= 1; if(hh<0){ hh=23; baseDate.setDate(baseDate.getDate()-1); } }
+    const baseDateStr = baseDate.toISOString().slice(0,10).replace(/-/g,"");
+    const baseTime = String(hh).padStart(2,"0") + "00";
+    const serviceKey = "4e27024dbae820c5f2095321a677edb4c33c68bca0b1914488bde4db4fe5ed48";   // api key
+    const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&dataType=JSON&base_date=${baseDateStr}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const items = data.response.body.items.item;
+        let weather={ temp:"-", cloud:"-", rain:"-", humidity:"-", pty:0, sky:1 };
+        items.forEach(it => { switch(it.category){
+            case "T1H": weather.temp=it.obsrValue; break;
+            case "RN1": weather.rain=it.obsrValue; break;
+            case "REH": weather.humidity=it.obsrValue; break;
+            case "SKY": weather.sky=it.obsrValue; break;
+            case "PTY": weather.pty=it.obsrValue; break;
+        }});
+        if(weather.sky!="-") weather.cloud=(weather.sky/4*100).toFixed(0);
+        const iconName = getWeatherIcon(weather.pty, weather.sky, weather.cloud, weather.rain);
+        document.getElementById("weatherIcon").src = iconName;
+        document.getElementById("weatherBgIcon").src = iconName;
+        return weather;
+    } catch(e) { console.error(e); return { temp:"-", cloud:"-", rain:"-", humidity:"-" }; }
+}
+
+// 간단 음식 추천 (기존과 동일)
+function recommendFood(w){
+    if(w.temp<10) return "따뜻한 국물 요리: 전골, 라멘, 우동";
+    if(w.rain>1) return "비 오는 날엔 파전 + 막걸리!";
+    if(w.cloud>70) return "든든한 음식: 카레, 찜닭";
+    return "가볍고 산뜻한 음식: 초밥, 샐러드";
+}
+
+// ⚠️ 수정: 음식점 더미 데이터에 소분류, 주소 정보 추가
+async function loadRestaurants(lat, lon){
+    // *******************************************************************
+    // 주의: 실제 백엔드 API (`http://127.0.0.1:5000/restaurants`)가
+    // 음식 소분류, 주소 정보를 반환하도록 수정되어야 합니다.
+    // 현재는 API 호출 후 하드코딩된 더미 데이터를 반환하는 것으로 가정합니다.
+    // *******************************************************************
+    try{
+        // 백엔드 API 호출은 유지
+        // const res = await fetch("http://127.0.0.1:5000/restaurants");
+        // const data = await res.json();
+
+        // 임시 더미 데이터 (주소 정보 포함)
+        const dummyData = [
+            { r_name: "가마솥 설렁탕", y: 35.820, x: 127.140, category: "한식", address: "전주시 완산구 팔달로 123", jibun: "객사1가 12-3" },
+            { r_name: "미미 짜장면", y: 35.825, x: 127.155, category: "중식", address: "전주시 완산구 객사3길 45", jibun: "경원동3가 45-1" },
+            { r_name: "스시 오마카세", y: 35.828, x: 127.145, category: "일식", address: "전주시 완산구 전라감영로 67", jibun: "중앙동 67-2" },
+            { r_name: "파스타 & 스테이크", y: 35.822, x: 127.152, category: "양식", address: "전주시 완산구 서노송동 89", jibun: "서노송동 89-4" },
+        ];
+        
+        return dummyData.map(r => ({ 
+            name: r.r_name, 
+            lat: r.y, 
+            lon: r.x, 
+            category: r.category, 
+            address: r.address, 
+            jibun: r.jibun 
+        }));
+        
+    } catch(e) { console.error(e); return []; }
+}
+
+// ⚠️ 수정: 지도 렌더링 및 목록 표시 로직 변경
+function renderMap(lat, lon, restaurants, isUserLocation){
+    const center = new kakao.maps.LatLng(lat, lon);
+    if(!map){ map = new kakao.maps.Map(document.getElementById('map'), {center, level:4}); }
+    else map.setCenter(center);
+    markers.forEach(m=>m.setMap(null));
+    markers=[];
+
+    // 지도 상 내 위치 마커 표시 (기존과 동일)
+    if(isUserLocation){
+        const userMarker = new kakao.maps.Marker({position:center,map});
+        const info = new kakao.maps.InfoWindow({ content:"<div style='padding:5px;'>📍 내 위치</div>" });
+        info.open(map,userMarker); markers.push(userMarker);
+    }
+    
+    const listContainer = document.getElementById("foodList");
+    // 💡 변경: UL 대신 OL 태그를 새로 만들어서 순서 있는 리스트로 변경
+    const ol = document.createElement("ol");
+    listContainer.innerHTML=""; // 기존 ul 내용을 비우고
+    listContainer.appendChild(ol); // ol을 추가
+
+    restaurants.forEach(r=>{
+        const pos = new kakao.maps.LatLng(r.lat, r.lon);
+        const marker = new kakao.maps.Marker({position:pos,map});
+        markers.push(marker);
+
+        // 팝업 오버레이(InfoWindow) 내용 생성
+        const infoContent = `<div style="padding:5px; font-size:12px; line-height:1.5;">
+            <strong>${r.name}</strong> (${r.category})<br>
+            도로명: ${r.address}<br>
+            지번: ${r.jibun}
+        </div>`;
+        const info = new kakao.maps.InfoWindow({ content:infoContent });
+        
+        // 지도 마커 클릭 시 팝업 열기/닫기
+        kakao.maps.event.addListener(marker,'click',()=>{ 
+            info.setMap(map); // 항상 보이게 하려면 open() 대신 setMap()
+            info.setPosition(pos); 
+        });
+        
+        // 리스트 표시 및 팝오버 기능 추가
+        const li = document.createElement("li");
+        li.style.cursor = "pointer"; // 클릭 가능함을 시각적으로 보여줌
+
+        // 음식점 이름과 소분류 표시
+        li.innerHTML = `<strong>${r.name}</strong> <span style="font-size: small; color: #888;">(${r.category})</span>`;
+        ol.appendChild(li); // UL 대신 OL에 추가
+
+        // 리스트 클릭 시에도 지도 마커의 팝업(InfoWindow) 열기
+        li.onclick = () => {
+            // 지도 이동 및 레벨 조정
+            map.setCenter(pos); 
+            map.setLevel(3, {animate: {duration: 500}});
+
+            // 모든 팝업 닫기 (선택된 음식점만 보이도록)
+            markers.forEach(m => kakao.maps.event.addListener(m, 'click', null)); // 기존 리스너 제거는 복잡하니 간단히
+            
+            info.open(map, marker);
+        };
+    });
+    document.getElementById("listCard").style.display="block";
+}
+
+
+// (비동기식 함수) GEO 작동후 로직 실행 (기존과 동일)
+async function loadAll(lat, lon, isUserLocation){
+    try{
+        if(lat===undefined||lon===undefined){
+            const pos=await getUserLocation();
+            lat=pos.lat; lon=pos.lon; isUserLocation=true;
+        }
+        const weather=await loadWeather(lat,lon);
+        document.getElementById("temp").textContent=weather.temp;
+        document.getElementById("cloud").textContent=weather.cloud;
+        document.getElementById("rain").textContent=weather.rain;
+        document.getElementById("humidity").textContent=weather.humidity;
+        document.getElementById("weatherCard").style.display="block";
+        const food=recommendFood(weather);
+        document.getElementById("foodText").textContent=food;
+        document.getElementById("foodCard").style.display="block";
+        const restaurants=await loadRestaurants(lat,lon);
+        renderMap(lat,lon,restaurants,isUserLocation);
+    } catch(e){ alert("오류: "+e); }
+}
+
+
+window.addEventListener("DOMContentLoaded", async ()=>{
+    try{
+        const pos=await getUserLocation();
+        const isUserLocation=!(pos.lat===35.8242&&pos.lon===127.1480);
+        loadAll(pos.lat,pos.lon,isUserLocation);
+    }catch(e){ loadAll(35.8242,127.1480,false); }
+});
+
+// GEOlocation에서 받아온 값 기상청api로 보내주기 위한 죄표 계산 로직 (기존과 동일)
+function dfsXyConv(lat, lon){
+    const RE=6371.00877, GRID=5.0, SLAT1=30.0, SLAT2=60.0, OLON=126.0, OLAT=38.0, XO=43, YO=136, DEGRAD=Math.PI/180;
+    let re=RE/GRID, slat1=SLAT1*DEGRAD, slat2=SLAT2*DEGRAD, olon=OLON*DEGRAD, olat=OLAT*DEGRAD;
+    let sn=Math.tan(Math.PI*0.25+slat2*0.5)/Math.tan(Math.PI*0.25+slat1*0.5);
+    sn=Math.log(Math.cos(slat1)/Math.cos(slat2))/Math.log(sn);
+    let sf=Math.tan(Math.PI*0.25+slat1*0.5); sf=Math.pow(sf,sn)*Math.cos(slat1)/sn;
+    let ro=Math.tan(Math.PI*0.25+olat*0.5); ro=re*sf/Math.pow(ro,sn);
+    let ra=Math.tan(Math.PI*0.25+lat*DEGRAD*0.5); ra=re*sf/Math.pow(ra,sn);
+    let theta=lon*DEGRAD-olon; if(theta>Math.PI) theta-=2*Math.PI; if(theta<-Math.PI) theta+=2*Math.PI; theta*=sn;
+    return { x:Math.floor(ra*Math.sin(theta)+XO+0.5), y:Math.floor(ro-ra*Math.cos(theta)+YO+0.5) };
+}
+
+// 날씨, 온도에 따라서 svg 파일 변경 (기존과 동일)
+function getWeatherIcon(pty, sky, cloud, rain){
+    switch(pty){
+        case 1: return "icons/rain.svg";
+        case 2: return "icons/sleet.svg";
+        case 3: return "icons/snow.svg";
+        case 4: return "icons/shower.svg";
+        case 5: return "icons/drizzle.svg";
+        case 6: return "icons/sleet.svg";
+        case 7: return "icons/flurry.svg";
+    }
+    if(cloud>80) return rain>0?"icons/thunder-rain.svg":"icons/cloud.svg";
+    if(cloud>50) return "icons/partly.svg";
+    return "icons/sun.svg";
+}
+
+
+
+//=======================================================================================
+// 플로팅 패널 flotmenu
+const foodCategories = [
+        "한식", "중식", "일식", "양식", "분식",
+        "패스트푸드", "치킨", "피자", "족발·보쌈",
+        "카페·디저트", "베트남 음식", "태국 음식",
+        "해산물", "고기구이", "국밥", "라면"
+    ];
+
+    function closePanel() {
+        const panel = document.getElementById('floatingPanel');
+        panel.style.opacity = '0';
+        setTimeout(() => panel.style.display = 'none', 300);
+    }
+
+    // 10개 랜덤 음식 표시
+    function renderRandomFoods() {
+        const randomFoods = [...foodCategories]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 10);
+
+        const listContainer = document.getElementById("flotmenu");
+        listContainer.innerHTML = randomFoods
+            .map(item => `<div class="food-item">${item}</div>`)
+            .join("");
+    }
+
+    renderRandomFoods();
+//=======================================================================================
+
+</script>
+</body>
+</html>

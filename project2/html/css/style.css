@@ -2,6 +2,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Arial', sans-serif; background: #f0f2f5; }
 
+
 .layout { display: flex; height: 100vh; width: 100vw; }
 
 .sidebar {
@@ -231,4 +232,62 @@ button:hover {
 #map {
     border-radius: 15px 0 0 15px;
     overflow: hidden;
+}
+/* 플로팅 패널 스타일 */
+.floating-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 110px;
+    max-height: 180px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    padding: 10px;
+    z-index: 9999;
+    overflow-y: auto;        /* 스크롤 가능 */
+    transition: opacity 0.3s ease;
+
+    /* 스크롤바 숨기기 */
+    scrollbar-width: none;    /* Firefox */
+    -ms-overflow-style: none; /* IE, Edge */
+}
+
+.floating-panel::-webkit-scrollbar {
+    display: none;            /* Chrome, Safari */
+}
+
+/* 닫기 버튼 */
+.floating-panel .close-btn {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #666;
+}
+.floating-panel .close-btn:hover {
+    color: #000;
+}
+
+.floating-panel h4 {
+    margin-top: 0;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.food-item {
+    font-size: 12px;
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+.food-item:last-child {
+    border-bottom: none;
+}
+.food-item:hover {
+    color: #007bff;
 }
