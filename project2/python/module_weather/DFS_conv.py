@@ -1,16 +1,21 @@
 import math
+# LCC DFS 좌표변환을 위한 기초 자료
 NX = 149            ## X축 격자점 수
 NY = 253            ## Y축 격자점 수
 
-Re = 6371.00877     ##  지도반경
-grid = 5.0          ##  격자간격 (km)
-slat1 = 30.0        ##  표준위도 1
-slat2 = 60.0        ##  표준위도 2
-olon = 126.0        ##  기준점 경도
-olat = 38.0         ##  기준점 위도
-xo = 210 / grid     ##  기준점 X좌표
-yo = 675 / grid     ##  기준점 Y좌표
+Re = 6371.00877     ##  지구 반경 (km)
+grid = 5.0          ##  격자 간격 (km)
+slat1 = 30.0        ##  표준위도 1 / 투영 위도1(degree)
+slat2 = 60.0        ##  표준위도 2 / 투영 위도2(degree)
+olon = 126.0        ##  기준점 경도(degree)
+olat = 38.0         ##  기준점 위도(degree)
+xo = 210 / grid     ##  기준점 X좌표(GRID)
+yo = 675 / grid     ##  기준점 Y좌표(GRID)
 first = 0
+
+# LCC DFS 좌표변환 ( code : "toXY"(위경도->좌표, v1:위도, v2:경도), "toLL"(좌표->위경도,v1:x, v2:y) )
+
+
 
 if first == 0 :
     PI = math.asin(1.0) * 2.0
@@ -91,3 +96,9 @@ print(gridToMap(53, 38))
 # 33.500946412305076, 126.54663058817043
 
 # https://gist.github.com/fronteer-kr/14d7f779d52a21ac2f16?permalink_comment_id=2785533
+# github url : https://gist.github.com/fronteer-kr/14d7f779d52a21ac2f16
+# 소스출처 : http://www.kma.go.kr/weather/forecast/digital_forecast.jsp  내부에 있음
+
+# (사용 예)
+# var rs = dfs_xy_conv("toLL","60","127");
+# console.log(rs.lat, rs.lng);

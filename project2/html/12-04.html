@@ -93,7 +93,11 @@ async function loadWeather(lat, lon) {
     let hh = now.getHours();
     let mm = now.getMinutes();
     if (mm < 40) { hh -= 1; if(hh<0){ hh=23; baseDate.setDate(baseDate.getDate()-1); } }
-    const baseDateStr = baseDate.toISOString().slice(0,10).replace(/-/g,"");
+    //const baseDateStr = baseDate.toISOString().slice(0,10).replace(/-/g,"");
+    const yyyy = baseDate.getFullYear();
+    const mm2 = String(baseDate.getMonth()+1).padStart(2,"0");
+    const dd = String(baseDate.getDate()).padStart(2,"0");
+    const baseDateStr = yyyy + mm2 + dd;
     const baseTime = String(hh).padStart(2,"0") + "00";
     const serviceKey = "REMOVED";   // api key
     const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&dataType=JSON&base_date=${baseDateStr}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
@@ -101,6 +105,11 @@ async function loadWeather(lat, lon) {
         const res = await fetch(url);
         const data = await res.json();
         const items = data.response.body.items.item;
+        
+        //***********************************************
+        //여기부터 수정 필요
+        //api 응답에 SKY키 없음
+
         let weather={ temp:"-", cloud:"-", rain:"-", humidity:"-", pty:0, sky:1 };
         items.forEach(it => { switch(it.category){
             case "T1H": weather.temp=it.obsrValue; break;
@@ -111,6 +120,8 @@ async function loadWeather(lat, lon) {
         }});
         if(weather.sky!="-") weather.cloud=(weather.sky/4*100).toFixed(0);
         const iconName = getWeatherIcon(weather.pty, weather.sky, weather.cloud, weather.rain);
+        //***********************************************
+
         document.getElementById("weatherIcon").src = iconName;
         document.getElementById("weatherBgIcon").src = iconName;
         return weather;
