@@ -5,11 +5,18 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
 # 1. 데이터 로드
-df = pd.read_csv("reviews.csv")
+df = pd.read_csv("reviews_tokenized.csv")
+df_emotionset = df
+print(df.info())
+
+# 결측행 제거
+df_emotionset = df_emotionset.dropna(subset=['tokens'])
+df_emotionset = df_emotionset.dropna(subset=['emotion'])
+print(df_emotionset.info())
 
 # 텍스트와 라벨
-X = df['clean_review'].astype(str)
-y = df['emotion']   # 0 / 1 라벨
+X = df_emotionset['tokens'].astype(str)
+y = df_emotionset['emotion']   # 0 / 1 라벨
 
 
 # 2. 훈련 / 테스트셋 분리
