@@ -1,6 +1,4 @@
 ki_list.txt
-project2/html/.env
-project2/app_ezenfood/.env
 *.code-workspace
 
 # Created by https://www.toptal.com/developers/gitignore/api/python,flask

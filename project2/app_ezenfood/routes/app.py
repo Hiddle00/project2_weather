@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from homecontroller import HomeController
+from home_controller import HomeController
 
 app = Flask(__name__)
 CORS(app)
