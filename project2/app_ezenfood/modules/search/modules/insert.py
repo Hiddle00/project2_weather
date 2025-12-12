@@ -1,5 +1,5 @@
-from project2.app_ezenfood.modules.search.service import SubEmbbeding
-from project2.app_ezenfood.modules.search.db.rest_dao import rest_insert
+#from project2.app_ezenfood.modules.search.service import SubEmbbeding
+#from project2.app_ezenfood.modules.search.dao.rest_dao import rest_insert
 import pandas as pd
 
 categories = [      
@@ -87,9 +87,25 @@ categories = [
             ]
 
 # 카테고리 insert
-svc = SubEmbbeding()
-svc.sub_insert(categories)
+#svc = SubEmbbeding()
+#svc.sub_insert(categories)
 
 # CSV 읽기 - 음식점 insert
-df = pd.read_csv("../static/csv/filter_list.csv")
-rest_insert(df)
+df = pd.read_csv("../../../csv/filter_list.csv")
+df1 = pd.read_csv("../../../csv/reviews_repredicted.csv")
+
+print(df.info())
+print(df1.info())
+
+df2 = df1[["rest_code"]]
+print(df2.info())
+
+
+def add_rest_code(df, df1) :
+    added_df = [for  ]
+    if rest in 
+    df["일련번호"]
+
+#rest_insert(df)
+
+

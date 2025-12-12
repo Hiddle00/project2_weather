@@ -18,7 +18,7 @@ CREATE TABLE sub_category (
 drop table rest;
 -- 음식점 테이블
 CREATE TABLE rest (
-    rest_id INT PRIMARY KEY AUTO_INCREMENT comment '음식점 일련번호',
+    rest_id INT PRIMARY KEY comment '음식점 일련번호',
     sub_id INT NOT NULL comment '카테고리 일련번호',
     rest_name VARCHAR(255) NOT NULL comment '음식점 이름',
     rest_x DOUBLE NOT NULL comment '음식점 경도',
