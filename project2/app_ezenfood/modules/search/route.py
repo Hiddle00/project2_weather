@@ -1,15 +1,21 @@
 from flask import Blueprint, request, jsonify
-from .service import search_recommendation
+
+from project2.app_ezenfood.modules.search.modules.get_conn import get_conn
+from project2.app_ezenfood.modules.search.dao.sub_dao import SubDAO
+from project2.app_ezenfood.modules.search.dao.rest_dao import RestDAO
+from project2.app_ezenfood.modules.search.service import SearchService
 
 search_bp = Blueprint("search", __name__, url_prefix="/search")
 
-@search_bp.route("/", methods=["GET"])
-def search():
-    query = request.args.get("q")
-    
-    if not query:
-        return jsonify({"error": "검색어 없음"}), 400
-    
-    result = search_recommendation(query)
+sub_dao        = SubDAO(get_conn)
+rest_dao       = RestDAO(get_conn)
+search_service = SearchService(sub_dao, rest_dao)
 
+@search_bp.route("/", methods=["GET"])
+def search() :
+    q = request.args.get("q")
+    if not q :
+        return jsonify({"error" : "검색어 없음"}), 400
+
+    result = search_service.search_sub(q)
     return jsonify(result)
