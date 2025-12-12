@@ -1,13 +1,15 @@
 from sentence_transformers import SentenceTransformer
-from sub_dao import SubDAO
+from project2.app_ezenfood.modules.search.db.sub_dao import SubDAO
 import json
+from .db.sub_dao import sub_select
+from .db.rest_dao import rest_select
 
 class SubEmbedding:
     
     def __init__(self):
         self.model = SentenceTransformer("snunlp/KR-SBERT-V40K-klueNLI-augSTS")
 
-    def insert_sub_categories(self, categories):
+    def insert_sub(self, categories):
         # 1) 문장 임베딩 일괄 처리
         sentences = [sentence for name, sentence, keys in categories]
         sentence_embeddings = self.model.encode(sentences, normalize_embeddings=True)
@@ -31,5 +33,20 @@ class SubEmbedding:
             ))
 
         # 4) DAO를 통해 DB 인서트
-        SubDAO.insert_many(data_list)
+        SubDAO.sub_insert(data_list)
         print(f"{len(data_list)}개 데이터 삽입 완료!")
+
+
+
+def search_sub(query):
+    # 소분류 최대 3개
+    subs = sub_select(query)[:3]
+
+    # 각 소분류별 음식점 5개
+    rests = {}
+    for sub in subs:
+        sub_name = sub.get("sub_name")
+        sub_rests = rest_select(sub_name)
+        rests[sub_name] = sub_rests[:5] if sub_rests else []
+
+    return {"subs": subs, "rests": rests}

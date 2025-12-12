@@ -1,15 +1,13 @@
 import pandas as pd
+from project2.app_ezenfood.modules.search.db.get_conn import get_conn
 import pymysql
-
+"""
+    음식점의 카테고리 이름을 카테고리 테이블에서 조회 후
+    해당 카테고리에서 id를 꺼내 음식점 테이블에 같이 insert
+"""
 def rest_insert(df) :
     # MySQL 연결
-    conn = pymysql.connect(
-                host="192.168.60.179",
-                user="유재욱",
-                password="ezen",
-                database="ezeneats",
-                charset="utf8mb4"
-            )
+    conn = get_conn()
     try :
         cursor = conn.cursor()
         
@@ -59,5 +57,20 @@ def rest_insert(df) :
     
     print("CSV 데이터가 rest 테이블에 저장 완료!")
     
+# 음식점 조회
+def rest_select(sub_id=None) :
+    conn = get_conn()
+    cursor = conn.cursor()
 
+    if sub_id:
+        sql = "SELECT * FROM rest WHERE sub_id=%s"
+        cursor.execute(sql, (sub_id,))
+    else:
+        sql = "SELECT * FROM rest"
+        cursor.execute(sql)
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows 
 

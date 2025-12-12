@@ -1,5 +1,5 @@
-from sub_embedding import SubEmbbeding
-from rest_dao import rest_insert
+from project2.app_ezenfood.modules.search.service import SubEmbbeding
+from project2.app_ezenfood.modules.search.db.rest_dao import rest_insert
 import pandas as pd
 
 categories = [      
@@ -86,9 +86,10 @@ categories = [
                 ["횟집", "생선회"]) 
             ]
 
+# 카테고리 insert
 svc = SubEmbbeding()
-svc.insert_sub_categories(categories)
+svc.sub_insert(categories)
 
-# CSV 읽기
+# CSV 읽기 - 음식점 insert
 df = pd.read_csv("../static/csv/filter_list.csv")
 rest_insert(df)

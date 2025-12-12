@@ -12,7 +12,10 @@ import os
     .join - os에 맞춰서 경로들을 연결해줌 ex) 지금 여기서는 Github/어쩌구/../csv/filter_list.csv
 """
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # test.py 있는 폴더
+print("base :",BASE_DIR)
+
 csv_path = os.path.join(BASE_DIR, '..', 'csv', 'filter_list.csv')  # 상대경로 수정
+print("csv :", csv_path)
 
 df = pd.read_csv(csv_path)
 print(df.info())
