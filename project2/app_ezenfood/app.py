@@ -1,11 +1,12 @@
 from flask import Flask, request
 from flask_cors import CORS
-from home_controller import HomeController
+from app_ezenfood import CSV_DIR
+
 
 app = Flask(__name__)
 CORS(app)
 
-home_controller = HomeController()
+app.config["CSV_DIR"] = CSV_DIR
 
 # 메인 페이지
 @app.route('/')

@@ -1,5 +1,9 @@
 from sqlalchemy import create_engine
+import pandas as pd
+from app_ezenfood.modules.recommend.test.review_service import ReviewService
+from app_ezenfood import CSV_DIR
 
+"""
 user = "root"
 password = "ezen"
 localhost = "localhost"
@@ -16,7 +20,7 @@ df_rest.to_sql(
     if_exists='append', # append / replace / fail
     index=False
 )
-"""
+
 append      기존 테이블에 데이터 추가
 replace     테이블 삭제 후 다시 생성
 fail        테이블 있으면 에러
@@ -29,3 +33,11 @@ VALUES
 
 sub_id 필수
 """
+
+review_df = pd.read_csv(CSV_DIR / "reviews_repredicted.csv")
+
+service = ReviewService()
+
+mapped_df = service.attach_rest_id(review_df)
+
+service.review_dao.insert_reviews(mapped_df)

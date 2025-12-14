@@ -1,13 +1,14 @@
 import pandas as pd
 import logging
+import math
 
 # ─── 로거 설정 ───
 logger = logging.getLogger(__name__)
 # __name__을 사용하면 현재 모듈 이름이 로거 이름이 됨
-logger.setLevel(logging.INFO) 
-# 최소 레벨은 INFO부터 
+logger.setLevel(logging.INFO)
+# 최소 레벨은 INFO부터
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-# 출력 형식 설정 = 로그가 기록된 시간 - 로그 레벨 - 실제 메세지        
+# 출력 형식 설정 = 로그가 기록된 시간 - 로그 레벨 - 실제 메세지
 
 # 콘솔 핸들러
 # 핸들러(handler): 로그를 어디로 보낼지 지정하는 객체
@@ -32,6 +33,14 @@ class RestDAO :
             sub_rows = cursor.fetchall()
             sub_dict = {row['sub_name']: row['sub_id'] for row in sub_rows}
 
+            # NaN값 > None으로 변환 (None은 mysql이 null로 처리 가능)
+            def nan_to_none(v):
+                if pd.isna(v):
+                    return None
+                if isinstance(v, float) and (math.isinf(v)):
+                    return None
+                return v
+            
             data_to_insert = []
             for _, row in df.iterrows() :
                 sub_name = row["상권업종소분류명"]
@@ -46,14 +55,14 @@ class RestDAO :
                         row["도로명주소"],
                         row["경도"],
                         row["위도"],
-                        row["review_count"],
-                        row["rest_code"]
+                        nan_to_none(row["review_count"]),
+                        nan_to_none(row["nplace_id"])
                     ))
                 else :
                     logger.warning(f"소분류 '{sub_name}'에 해당하는 ID가 없습니다. 건너뜀.")
 
             insert_query = """
-                INSERT INTO rest 
+                INSERT INTO rest
                 (rest_name, sub_id, rest_dong, rest_old, rest_addr, rest_x, rest_y, review_count, nplace_id)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """

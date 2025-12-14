@@ -1,5 +1,5 @@
 import mysql.connector
-from .distance_module import haversine
+from .utils.distance_module import haversine
 
 # 디비 연결 모듈   
 DB_CONFIG = {

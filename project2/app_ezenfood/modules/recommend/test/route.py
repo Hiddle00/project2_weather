@@ -34,3 +34,26 @@ def recommend():
 
     result = service.recommend(lat, lon, weather)
     return jsonify(result)
+
+from flask import Blueprint, request, jsonify
+from project2.app_ezenfood.modules.recommend.test.reco_service import RestaurantRecommendService
+
+bp = Blueprint("recommend", __name__)
+service = RestaurantRecommendService()
+
+@bp.route("/recommend/rest")
+def recommend_rest():
+
+    user_lat = float(request.args['lat'])
+    user_lon = float(request.args['lon'])
+
+    # DAO에서 가져왔다고 가정
+    rest_df = ...
+
+    result = service.recommend(
+        user_lat=user_lat,
+        user_lon=user_lon,
+        rest_df=rest_df
+    )
+
+    return jsonify(result.to_dict(orient="records"))

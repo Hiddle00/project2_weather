@@ -17,7 +17,7 @@ CREATE TABLE sub_category (
 drop table rest;
 -- 음식점 테이블
 CREATE TABLE rest (
-    rest_id INT PRIMARY KEY comment '음식점 일련번호',
+    rest_id INT PRIMARY KEY AUTO_INCREMENT comment '음식점 일련번호',
     sub_id INT NOT NULL comment '카테고리 일련번호',
     rest_name VARCHAR(255) NOT NULL comment '음식점 이름',
     rest_x DOUBLE NOT NULL comment '음식점 경도',
@@ -25,13 +25,16 @@ CREATE TABLE rest (
     rest_dong VARCHAR(255) comment '법정동명',
     rest_addr VARCHAR(255) comment '도로명주소',
     rest_old VARCHAR(255) comment '지번',
-    review_count INT NOT NULL DEFAULT 0 comment '전체 리뷰 수',
+    review_count INT DEFAULT 0 comment '전체 리뷰 수',
     rest_cdate DATETIME DEFAULT NOW() comment '등록일자',
     rest_udate DATETIME comment '수정일자',
     nplace_id INT comment '네이버 플레이스 id',
+    rest_display VARCHAR(2) DEFAULT 'Y' comment '노출여부',
     FOREIGN KEY (sub_id) REFERENCES sub_category(sub_id)
 ) comment = '음식점';
 
+ALTER TABLE rest
+ADD COLUMN rest_display VARCHAR(2) DEFAULT 'Y' COMMENT '노출여부';
 
 drop table review;
 -- 리뷰 테이블

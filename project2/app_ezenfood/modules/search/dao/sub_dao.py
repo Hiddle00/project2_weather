@@ -1,5 +1,5 @@
 import logging
-from project2.app_ezenfood.modules.search.modules.get_conn import get_conn
+from app_ezenfood.modules.utils.get_conn import get_conn
 from sentence_transformers import SentenceTransformer
 import json
 

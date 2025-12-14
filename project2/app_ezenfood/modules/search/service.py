@@ -1,7 +1,7 @@
 from sentence_transformers import SentenceTransformer
-from project2.app_ezenfood.modules.search.dao.sub_dao import SubDAO
-from project2.app_ezenfood.modules.search.dao.rest_dao import RestDAO
-from project2.app_ezenfood.modules.search.modules.get_query import get_query
+from app_ezenfood.modules.search.dao.sub_dao import SubDAO
+from app_ezenfood.modules.search.dao.rest_dao import RestDAO
+from app_ezenfood.modules.search.modules.get_query import get_query
 import json
 
 

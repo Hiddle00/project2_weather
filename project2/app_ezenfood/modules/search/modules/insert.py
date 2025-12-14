@@ -1,6 +1,8 @@
-#from project2.app_ezenfood.modules.search.service import SubEmbbeding
-#from project2.app_ezenfood.modules.search.dao.rest_dao import rest_insert
+#from app_ezenfood.modules.search.service import SubEmbbeding
+from app_ezenfood.modules.search.dao.rest_dao import RestDAO
+from app_ezenfood.modules.utils.get_conn import get_root_conn
 import pandas as pd
+from app_ezenfood import CSV_DIR
 
 categories = [      
                 ("경양식", 
@@ -91,18 +93,19 @@ categories = [
 #svc.sub_insert(categories)
 
 # CSV 읽기 - 음식점 insert
-df_rest  = pd.read_csv("../../../csv/filter_list.csv")
-df_review  = pd.read_csv("../../../csv/reviews_repredicted.csv")
+df_rest    = pd.read_csv(CSV_DIR / "filter_list.csv")
+df_review  = pd.read_csv(CSV_DIR / "reviews_repredicted.csv")
 
 print(df_rest.info())
 print(df_review.info())
 
 # 음식점 이름 기준으로 rest_id 하나만 남김
-# rest_code = nplace_id : 네이버 플레이스 ID
+# nplace_id : 네이버 플레이스 ID
 df_rest_map = (
-    df_review[['rest_code', 'rest', 'review_count']]
-    .drop_duplicates(subset='rest').rename(columns={'rest':'상호명'})
+    df_review[['nplace_id', 'rest_name', 'review_count']]
+    .drop_duplicates(subset='rest_name').rename(columns={'rest_name':'상호명'})
 )
+# , '경도' : 'rest_x', '위도' : 'rest_y', 'positive_ratio' :
 print(df_rest_map.info())
 
 df_rest = df_rest.merge(
@@ -112,6 +115,8 @@ df_rest = df_rest.merge(
 )
 print(df_rest.info())
 
-#rest_insert(df_rest)
+dao = RestDAO(get_root_conn)
+
+dao.insert(df_rest)
 
 

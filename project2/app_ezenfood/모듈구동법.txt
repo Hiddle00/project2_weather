@@ -1,0 +1,15 @@
+1. 터미널에서 app_ezenfood의 상위폴더로 이동
+ex) D:\project2> 
+D:\Work\ezen\project2_weather\project2>
+
+2. python -m (실행할 파일의 경로).(파일이름)
+python -m app_ezenfood.modules.recommend.test.test
+
+
+
+경로 사용법
+
+from app_ezenfood import CSV_DIR
+
+df_rest = pd.read_csv(CSV_DIR / "filter_list.csv")
+df_review = pd.read_csv(CSV_DIR / "reviews_repredicted.csv")

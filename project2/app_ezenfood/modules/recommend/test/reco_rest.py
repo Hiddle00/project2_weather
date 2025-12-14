@@ -1,5 +1,5 @@
 import pandas as pd
-from app_ezenfood.modules.distance_module import haversine
+from app_ezenfood.modules.utils.distance_module import haversine
 
 # 사용자 위치, 리뷰 수, 리뷰 감성 점수 기반 음식점 추천 엔진
 class RestaurantRecommendationEngine:
@@ -35,13 +35,12 @@ class RestaurantRecommendationEngine:
         return df
 
     # 추천 로직
-    def recommend_top_n(
+    def rest_score(
         self,
         user_lat: float,
         user_lon: float,
         rest_df: pd.DataFrame,
-        max_distance_km: float = 1.0,
-        top_n: int = 5
+        max_distance_km: float = 1.0
     ) -> pd.DataFrame:
 
         df = rest_df.copy()
@@ -59,6 +58,8 @@ class RestaurantRecommendationEngine:
         df = self._calculate_distance(df, user_lat, user_lon)
         # 반경을 벗어나는 음식점 컷오프
         df = df[df['distance_km'] <= max_distance_km]
+        if df.empty:
+            return df
 
         # 2. 점수 정규화
         # .clip : 범위를 초과 한 값은 잘라냄
@@ -76,9 +77,4 @@ class RestaurantRecommendationEngine:
             df['distance_score']  * self.distance_weight
         )
 
-        # 4. 정렬 후 Top-N 반환
-        return (
-            df.sort_values('final_score', ascending=False)
-              .head(top_n)
-              .reset_index(drop=True)
-        )
+        return df

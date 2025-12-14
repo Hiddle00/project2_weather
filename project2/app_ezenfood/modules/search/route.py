@@ -1,9 +1,9 @@
 from flask import Blueprint, request, jsonify
 
-from project2.app_ezenfood.modules.search.modules.get_conn import get_conn
-from project2.app_ezenfood.modules.search.dao.sub_dao import SubDAO
-from project2.app_ezenfood.modules.search.dao.rest_dao import RestDAO
-from project2.app_ezenfood.modules.search.service import SearchService
+from app_ezenfood.modules.utils.get_conn import get_conn
+from app_ezenfood.modules.search.dao.sub_dao import SubDAO
+from app_ezenfood.modules.search.dao.rest_dao import RestDAO
+from app_ezenfood.modules.search.service import SearchService
 
 search_bp = Blueprint("search", __name__, url_prefix="/search")
 
