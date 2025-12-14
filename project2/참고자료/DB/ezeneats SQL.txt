@@ -10,7 +10,6 @@ CREATE TABLE sub_category (
     sub_name VARCHAR(255) NULL comment '카테고리 이름',
     sub_sentence TEXT NULL comment '카테고리 문장',
     sub_sentemb JSON NULL comment '카테고리 문장 벡터',
-    sub_keyword JSON NULL comment '카테고리 키워드',
     sub_keyemb JSON NULL comment '카테고리 키워드 벡터'
 ) comment = '음식 카테고리';
 
@@ -29,6 +28,7 @@ CREATE TABLE rest (
     review_count INT NOT NULL DEFAULT 0 comment '전체 리뷰 수',
     rest_cdate DATETIME DEFAULT NOW() comment '등록일자',
     rest_udate DATETIME comment '수정일자',
+    nplace_id INT comment '네이버 플레이스 id',
     FOREIGN KEY (sub_id) REFERENCES sub_category(sub_id)
 ) comment = '음식점';
 
@@ -47,15 +47,15 @@ CREATE TABLE review (
 ) comment = '리뷰';
 
 
-drop table log;
+drop table log_table;
 -- 이용자 로그 테이블
-CREATE TABLE log (
+CREATE TABLE log_table (
     log_id INT PRIMARY KEY AUTO_INCREMENT comment '로그 일련번호',
-    log_agreed VARCHAR(2) NOT NULL comment '위치정보 동의 여부( 0 = no, 1 = yes )',
-    log_query VARCHAR(255) DEFAULT NULL comment '검색어',
-    log_user_ip VARCHAR(255) DEFAULT NULL comment '사용자 IP',
-    log_x DOUBLE NOT NULL comment '사용자 경도',
-    log_y DOUBLE NOT NULL comment '사용자 위도',
+    log_agreed VARCHAR(2) DEFAULT 'N' comment '위치정보 동의 여부( N, Y )',
+    log_query VARCHAR(255) comment '검색어',
+    log_user_ip VARCHAR(255) comment '사용자 IP',
+    log_x DOUBLE DEFAULT -3.14 comment '사용자 경도',
+    log_y DOUBLE DEFAULT -3.14 comment '사용자 위도',
     log_date DATETIME DEFAULT NOW() comment '기록일시',
     log_weather JSON NOT NULL comment '날씨 정보',
     log_random INT comment '랜덤 선택 카테고리',
@@ -73,6 +73,7 @@ CREATE TABLE sub_log (
     log_date DATETIME DEFAULT NOW() comment '기록일시',
     log_x DOUBLE DEFAULT -3.14 NOT NULL comment '이용자 경도',
     log_y DOUBLE DEFAULT -3.14 NOT NULL comment '이용자 위도',
+    log_weather JSON NOT NULL comment '날씨 정보',
     FOREIGN KEY (sub_id) REFERENCES sub_category(sub_id)
 ) comment = '카테고리 로그';
 
@@ -86,6 +87,7 @@ CREATE TABLE rest_log (
     log_date DATETIME DEFAULT NOW() comment '기록일시',
     log_x DOUBLE DEFAULT -3.14 NOT NULL comment '이용자 경도',
     log_y DOUBLE DEFAULT -3.14 NOT NULL comment '이용자 위도',
+    log_weather JSON NOT NULL comment '날씨 정보',
     FOREIGN KEY (rest_id) REFERENCES rest(rest_id)
 ) comment = '음식점 로그';
 

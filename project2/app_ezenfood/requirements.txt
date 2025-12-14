@@ -1,3 +1,6 @@
 flask
 scikit-learn
 Selenium
+ruff
+black
+pre-commit

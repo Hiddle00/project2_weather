@@ -26,3 +26,11 @@ def recommend_rest(category) :
         restaurants = dao.get_recommend_restaurants(category)
     return restaurants
 
+@recommend_bp.route("/recommend", methods=["GET"])
+def recommend():
+    lat = request.args.get("lat")
+    lon = request.args.get("lon")
+    weather = request.args.get("weather")
+
+    result = service.recommend(lat, lon, weather)
+    return jsonify(result)

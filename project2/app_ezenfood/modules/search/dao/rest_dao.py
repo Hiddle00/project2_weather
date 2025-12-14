@@ -45,15 +45,17 @@ class RestDAO :
                         row["지번주소"],
                         row["도로명주소"],
                         row["경도"],
-                        row["위도"]
+                        row["위도"],
+                        row["review_count"],
+                        row["rest_code"]
                     ))
                 else :
                     logger.warning(f"소분류 '{sub_name}'에 해당하는 ID가 없습니다. 건너뜀.")
 
             insert_query = """
                 INSERT INTO rest 
-                (rest_name, sub_id, rest_dong, rest_old, rest_addr, rest_x, rest_y)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                (rest_name, sub_id, rest_dong, rest_old, rest_addr, rest_x, rest_y, review_count, nplace_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.executemany(insert_query, data_to_insert)
             conn.commit()

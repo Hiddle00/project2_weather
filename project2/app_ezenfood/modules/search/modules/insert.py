@@ -91,21 +91,27 @@ categories = [
 #svc.sub_insert(categories)
 
 # CSV 읽기 - 음식점 insert
-df = pd.read_csv("../../../csv/filter_list.csv")
-df1 = pd.read_csv("../../../csv/reviews_repredicted.csv")
+df_rest  = pd.read_csv("../../../csv/filter_list.csv")
+df_review  = pd.read_csv("../../../csv/reviews_repredicted.csv")
 
-print(df.info())
-print(df1.info())
+print(df_rest.info())
+print(df_review.info())
 
-df2 = df1[["rest_code"]]
-print(df2.info())
+# 음식점 이름 기준으로 rest_id 하나만 남김
+# rest_code = nplace_id : 네이버 플레이스 ID
+df_rest_map = (
+    df_review[['rest_code', 'rest', 'review_count']]
+    .drop_duplicates(subset='rest').rename(columns={'rest':'상호명'})
+)
+print(df_rest_map.info())
 
+df_rest = df_rest.merge(
+    df_rest_map,
+    on='상호명',
+    how='left'
+)
+print(df_rest.info())
 
-def add_rest_code(df, df1) :
-    added_df = [for  ]
-    if rest in 
-    df["일련번호"]
-
-#rest_insert(df)
+#rest_insert(df_rest)
 
 
