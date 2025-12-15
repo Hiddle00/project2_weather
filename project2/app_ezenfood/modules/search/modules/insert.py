@@ -1,6 +1,6 @@
 #from app_ezenfood.modules.search.service import SubEmbbeding
 from app_ezenfood.modules.search.dao.rest_dao import RestDAO
-from app_ezenfood.modules.utils.get_conn import get_root_conn
+from app_ezenfood.modules.utils.get_conn import get_conn
 import pandas as pd
 from app_ezenfood import CSV_DIR
 
@@ -115,8 +115,8 @@ df_rest = df_rest.merge(
 )
 print(df_rest.info())
 
-dao = RestDAO(get_root_conn)
+dao = RestDAO(get_conn)
 
-dao.insert(df_rest)
+# dao.insert(df_rest)
 
 
