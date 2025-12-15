@@ -33,6 +33,10 @@ class ReviewDAO:
     # df = 리뷰df + rest_id + nplace_id
     def insert_reviews(self, df: pd.DataFrame):
         conn = self.conn_factory()
+        print("==" * 25)
+        print(df[['rest_id']].isna().sum())
+        print(df[df['rest_id'].isna()].head())
+        print("+_" * 25)
         try :
             cursor = conn.cursor()
             sql = """

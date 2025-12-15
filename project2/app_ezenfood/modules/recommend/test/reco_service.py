@@ -2,9 +2,7 @@ import pandas as pd
 
 from app_ezenfood.modules.recommend.test.reco_dao import RecommendDAO
 from app_ezenfood.modules.utils.get_conn import get_root_conn
-from app_ezenfood.modules.recommend.test.test import (
-    RestaurantRecommendationEngine
-)
+from app_ezenfood.modules.recommend.test.reco_rest import RestaurantRecommendationEngine
 
 class RestaurantRecommendService:
 
@@ -62,11 +60,17 @@ class RestaurantRecommendService:
         # 음식점 추천 전체 흐름
         # 1. 음식점 + 리뷰 집계 데이터
         rest_df   = self.reco_dao.fetch_rest_list(sub_id)
+        print(rest_df.head(10))
+        print(rest_df.info())
         review_df = self.reco_dao.fetch_reviews()
-
+        print("++" * 25)
+        
         # 2. positive_ratio 계산 (Service 책임)
         scored_df = self._calculate_positive_ratio(rest_df, review_df)
 
+        print(rest_df['rest_y'].iloc[1])
+        print(rest_df['rest_y'].iloc[2])
+        print(rest_df['rest_y'].iloc[3])
         # 3. 추천 엔진 실행
         scored_df = self.engine.rest_score(
             user_lat        = user_lat,
@@ -74,7 +78,8 @@ class RestaurantRecommendService:
             rest_df         = scored_df,
             max_distance_km = max_distance_km
         )
-
+        
+        print("+_" * 25)
         # 4. 점수 기준 정렬 후 TOP-N
         result = (
             scored_df
@@ -82,5 +87,6 @@ class RestaurantRecommendService:
             .head(top_n)
             .reset_index(drop=True)
         )
-
+        
+        print("+_" * 25)
         return result

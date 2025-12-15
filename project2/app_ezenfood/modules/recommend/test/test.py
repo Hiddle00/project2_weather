@@ -1,10 +1,19 @@
 import pandas as pd
 from .reco_rest import RestaurantRecommendationEngine
+from app_ezenfood.modules.recommend.test.reco_dao import RecommendDAO
+from app_ezenfood.modules.utils.get_conn import get_root_conn
 from app_ezenfood import CSV_DIR
 
 
-engine = RestaurantRecommendationEngine()
+#engine = RestaurantRecommendationEngine()
 
+dao = RecommendDAO(get_root_conn)
+
+df = dao.fetch_rest_list(6)
+
+print(df.info())
+
+"""
 df_rest   = pd.read_csv(CSV_DIR / "filter_list.csv")
 df_review = pd.read_csv(CSV_DIR / "reviews_repredicted.csv")
 
@@ -31,3 +40,4 @@ result = engine.rest_score(
 )
 
 print(result[['rest_name', 'final_score', 'distance_km']])
+"""

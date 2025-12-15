@@ -27,13 +27,24 @@ class ReviewService:
         print(rest_df.columns)
         print("+_" * 25)
         
-        # 2. nplace_id 기준 merge (최우선)
+        merged = rest_df.copy()
+        
+        # 2. rest_name 기준 merge
         if 'rest_name' in review_df.columns :
             merged = review_df.merge(
-                rest_df[['rest_name']],
-                left_on  = 'rest_name',
-                right_on = 'rest_name',
+                rest_df[['rest_id','rest_name']],
+                on  = 'rest_name',
                 how      = 'left'
             )
+
+        # 3. fallback: rest_name 기준 (rest_id 없는 행만)
+        missing_mask = merged['rest_id'].isna()
+
+        # 4. 매핑 결과 요약 출력
+        success_cnt = merged['rest_id'].notna().sum()
+        fail_cnt = merged['rest_id'].isna().sum()
+
+        print(f"✅ 매핑 성공: {success_cnt}")
+        print(f"❌ 매핑 실패: {fail_cnt}")
 
         return merged
