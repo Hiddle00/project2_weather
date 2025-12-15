@@ -1,4 +1,4 @@
-from app_ezenfood.modules.recommend.test.review_dao import ReviewDAO
+from app_ezenfood.modules.recommend.review_dao import ReviewDAO
 from app_ezenfood.modules.utils.get_conn import get_root_conn
 import pandas as pd
 
@@ -11,6 +11,9 @@ class ReviewService:
         self,
         review_df : pd.DataFrame
     ) -> pd.DataFrame:
+        
+        if 'rest_name' not in review_df.columns:
+            raise ValueError("review_df에 'rest_name' 컬럼이 없습니다.")
         
         # 리뷰 DF에 rest_id 추가
         # 1. DB 음식점 정보
@@ -36,6 +39,8 @@ class ReviewService:
                 on  = 'rest_name',
                 how      = 'left'
             )
+        if 'rest_id' not in merged.columns:
+            raise RuntimeError("merge 결과에 rest_id 컬럼이 생성되지 않았습니다.")
 
         # 3. fallback: rest_name 기준 (rest_id 없는 행만)
         missing_mask = merged['rest_id'].isna()

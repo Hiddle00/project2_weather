@@ -30,7 +30,7 @@ class ReviewDAO:
             cursor.close()
             conn.close()
 
-    # df = 리뷰df + rest_id + nplace_id
+    # 파라미터df = 리뷰df + rest_id + nplace_id
     def insert_reviews(self, df: pd.DataFrame):
         conn = self.conn_factory()
         print("==" * 25)

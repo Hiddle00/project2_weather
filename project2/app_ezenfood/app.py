@@ -3,6 +3,7 @@ from flask_cors import CORS
 from .modules.map_api import init_app as map_init
 from pathlib import Path
 from dotenv import load_dotenv
+from app_ezenfood.modules.recommend.route import recommend_bp
 import os
 # 뭣만 하면 CSV_DIR 오류 만 하루종일 뜨길래 오류 덜뜨게 수정 완료 모듈구동법 수정함
 
@@ -13,6 +14,7 @@ CSV_DIR = BASE_DIR / "csv"
     
 app = Flask(__name__)
 CORS(app)
+app.register_blueprint(recommend_bp)
 
 # 맵 init 호출
 map_init(app)
@@ -27,16 +29,10 @@ KAKAO_MAP_KEY = os.getenv("KAKAO_MAP_KEY")
 def index():
     return render_template('map.html', kakao_key=KAKAO_MAP_KEY)
 
-# 날씨 기반 음식 추천       이거 없애고 recommend쪽으로 가져와야함
-# @app.route('/api/recommend', methods=['GET'])
-# def recommend():
-#     return home_controller.get_recommendation(request.args)
-
-# 음식점 조회               이거 없애고 recommend쪽으로 가져와야함
-# @app.route('/api/restaurants', methods=['GET'])
-# def restaurants():
-#     return home_controller.get_restaurants(request.args)
-
 if __name__ == '__main__':
     print("서버 가동 준비 완료!")
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+
+
