@@ -5,7 +5,8 @@ import os
 map_bp = Blueprint("map_bp", __name__)
 service = MapService()
 
-WEATHER_KEY = os.getenv("WEATHER_KEY")  # .env에 기상청 키 저장
+WEATHER_KEY = os.getenv("WEATHER_API_KEY")
+
 
 @map_bp.route("/restaurants", methods=["GET"])
 def restaurants():
@@ -24,6 +25,7 @@ def restaurants():
 def weather():
     lat = request.args.get("lat", type=float)
     lon = request.args.get("lon", type=float)
+    print("WEATHER API HIT", lat, lon)
     if lat is None or lon is None:
         return jsonify({"error": "lat, lon 필요"}), 400
     data = service.get_weather(lat, lon, WEATHER_KEY)

@@ -223,7 +223,7 @@ function moveMap(lat, lon, level = 4) {
  *************************************************/
 async function loadWeather(lat, lon) {
     try {
-        const res = await fetch(`/weather?lat=${lat}&lon=${lon}`);
+        const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
         return await res.json();
     } catch {
         return { temp: "-", rain: 0, humidity: 0, pty: 0, sky: 1, cloud: 0 };
@@ -305,26 +305,31 @@ function renderRestaurants(list) {
     ul.innerHTML = "";
 
     list.forEach(r => {
-        const pos = new kakao.maps.LatLng(r.y, r.x);
+        // DB 컬럼명에 맞춰 좌표 설정
+        const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
         const marker = new kakao.maps.Marker({ position: pos, map });
         markers.push(marker);
 
-        // infoWindow 생성
+        // infoWindow 생성 (DB 컬럼명 반영)
         const content = `<div style="padding:5px;font-size:12px;">
-                            <b>${r.r_name}</b><br>
-                            지번: ${r.jibun ?? "-"}<br>
-                            도로명: ${r.address ?? "-"}
+                            <b>${r.rest_name}</b><br>
+                            지번: ${r.rest_dong ?? "-"}<br>
+                            도로명: ${r.rest_addr ?? "-"}<br>
+                            리뷰: ${r.review_count ?? "-"}<br>
+                            개업: ${r.rest_old ?? "-"}년
                          </div>`;
         const infowindow = new kakao.maps.InfoWindow({ content });
 
+        // 마커 클릭 시 infoWindow 오픈
         marker.addListener('click', () => {
             map.setCenter(pos);
             map.setLevel(3);
             infowindow.open(map, marker);
         });
 
+        // 리스트 클릭 시 동일 동작
         const li = document.createElement("li");
-        li.textContent = `${r.r_name} (${r.sort})`;
+        li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰)`;
         li.onclick = () => {
             map.setCenter(pos);
             map.setLevel(3);
@@ -335,6 +340,7 @@ function renderRestaurants(list) {
 
     document.getElementById("listCard").style.display = "block";
 }
+
 
 /*************************************************
  * floating panel (고정 추천)

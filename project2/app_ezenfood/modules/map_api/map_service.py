@@ -1,6 +1,6 @@
 from .map_dao import MapDAO
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 import math
 
 class MapService:
@@ -11,7 +11,17 @@ class MapService:
     # 음식점 조회
     # ==========================
     def get_restaurants(self, lat, lon, food_sort=None, limit=30):
-        return self.dao.fetch_restaurants(lat, lon, food_sort, limit)
+        """
+        MapDAO.fetch_restaurants 호출
+        lat/lon 기준 근처 음식점 반환
+        DB 조회 실패 시 콘솔에 에러 로그
+        """
+        try:
+            return self.dao.fetch_restaurants(lat, lon, food_sort, limit)
+        except Exception as e:
+            print(f"[MapService] DB 조회 실패: {e}")
+            return []  # 실패 시 빈 리스트 반환
+
 
     # ==========================
     # 기상청 좌표 변환
@@ -50,36 +60,50 @@ class MapService:
         nx, ny = coords["x"], coords["y"]
 
         now = datetime.now()
-        hh = now.hour
-        base_date = now
         if now.minute < 40:
-            hh -= 1
-            if hh < 0:
-                hh = 23
-                base_date = base_date.replace(day=base_date.day - 1)
+            now -= timedelta(hours=1)
+        base_date_str = now.strftime("%Y%m%d")
+        base_time = now.strftime("%H") + "00"
+        
+        url = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
+        params = {
+            "serviceKey": service_key,
+            "numOfRows": 100,
+            "pageNo": 1,
+            "dataType": "JSON",
+            "base_date": base_date_str,
+            "base_time": base_time,
+            "nx": nx,
+            "ny": ny
+        }
 
-        base_date_str = base_date.strftime("%Y%m%d")
-        base_time = f"{hh:02d}00"
-
-        url = (
-            f"https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
-            f"?serviceKey={service_key}&numOfRows=100&pageNo=1&dataType=JSON"
-            f"&base_date={base_date_str}&base_time={base_time}&nx={nx}&ny={ny}"
-        )
+        def safe_float(v, default=0):
+            try:
+                return float(v)
+            except:
+                return default
 
         try:
-            res = requests.get(url, timeout=5)
+            res = requests.get(url, params=params, timeout=5)
+            res.raise_for_status()
             data = res.json()
+
             items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
             weather = {"temp": "-", "rain": 0, "humidity": 0, "pty": 0, "sky": 1}
 
             for it in items:
-                if it["category"] == "T1H": weather["temp"] = float(it["obsrValue"])
-                elif it["category"] == "RN1": weather["rain"] = float(it["obsrValue"])
-                elif it["category"] == "REH": weather["humidity"] = float(it["obsrValue"])
-                elif it["category"] == "SKY": weather["sky"] = int(it["obsrValue"])
-                elif it["category"] == "PTY": weather["pty"] = int(it["obsrValue"])
+                cat = it.get("category")
+                val = it.get("obsrValue")
+                if cat == "T1H": weather["temp"] = safe_float(val, "-")
+                elif cat == "RN1": weather["rain"] = safe_float(val)
+                elif cat == "REH": weather["humidity"] = safe_float(val)
+                elif cat == "SKY": weather["sky"] = int(val) if val.isdigit() else 1
+                elif cat == "PTY": weather["pty"] = int(val) if val.isdigit() else 0
+
             return weather
+
         except Exception as e:
             print(f"Weather API error: {e}")
             return {"temp": "-", "rain": 0, "humidity": 0, "pty": 0, "sky": 1}
+
+  
