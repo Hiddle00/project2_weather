@@ -10,6 +10,7 @@ CREATE TABLE sub_category (
     sub_name VARCHAR(255) NULL comment '카테고리 이름',
     sub_sentence TEXT NULL comment '카테고리 문장',
     sub_sentemb JSON NULL comment '카테고리 문장 벡터',
+    sub_keyword JSON NULL comment '카테고리 키워드',
     sub_keyemb JSON NULL comment '카테고리 키워드 벡터'
 ) comment = '음식 카테고리';
 

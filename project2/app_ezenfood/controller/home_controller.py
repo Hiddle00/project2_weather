@@ -1,8 +1,10 @@
 from flask import jsonify, render_template
-from modules import model_module, db_module
+from modules import db_module
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+
+from app_ezenfood.modules.recommend.engine import model_module
 
 load_dotenv()
 

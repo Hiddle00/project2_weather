@@ -16,6 +16,12 @@ class ReviewDAO:
                 FROM rest
             """)
             rows = cursor.fetchall()
+            
+            print("+_" * 25)
+            print(len(rows))
+            print("==" * 25)
+            print(rows, type(rows), "321")
+            
             return rows
         except Exception as e :
             print("rest select 중 오류 발생 :", e)
