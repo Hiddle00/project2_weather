@@ -46,7 +46,7 @@ class SubDAO:
         try:
             cursor = conn.cursor()
             query = """
-                SELECT 
+                SELECT
                     sub_id,
                     sub_name,
                     sub_sentence,

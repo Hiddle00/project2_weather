@@ -1,4 +1,4 @@
-from app_ezenfood.modules.recommend.review_dao import ReviewDAO
+from app_ezenfood.modules.recommend.DAO.review_dao import ReviewDAO
 from app_ezenfood.modules.utils.get_conn import get_root_conn
 import pandas as pd
 

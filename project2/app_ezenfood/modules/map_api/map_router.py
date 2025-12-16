@@ -7,7 +7,7 @@ service = MapService()
 
 WEATHER_KEY = os.getenv("WEATHER_API_KEY")
 
-
+# 기본 음식점 출력용 라우트
 @map_bp.route("/restaurants", methods=["GET"])
 def restaurants():
     lat = request.args.get("lat", type=float)
@@ -21,6 +21,7 @@ def restaurants():
     data = service.get_restaurants(lat, lon, food_sort, limit)
     return jsonify(data)
 
+# 좌표로 날씨 돌려주는 라우트
 @map_bp.route("/weather", methods=["GET"])
 def weather():
     lat = request.args.get("lat", type=float)

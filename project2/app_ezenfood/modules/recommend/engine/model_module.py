@@ -25,6 +25,7 @@ def recommend_food(input_data):
     if not KMEANS_MODEL:
         return {"error": "모델 없음"}
 
+    # 삼항 연산자 참 if 조건 else 거짓
     effective_rain = 1.0 if input_data['pty'] in [1,2,3,4,5,6,7] else input_data['강수량']
     input_data['강수량'] = effective_rain
 

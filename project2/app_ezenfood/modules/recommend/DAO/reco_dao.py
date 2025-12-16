@@ -18,7 +18,8 @@ class RecommendDAO:
                     r.rest_y,
                     r.review_count
                 from rest r
-                where r.sub_id=%s
+                where 1=1
+                and r.sub_id=%s
             """
             # where r.rest_display  = 'Y'
             cursor.execute(query, (sub_id,))
@@ -38,7 +39,8 @@ class RecommendDAO:
                     rest_id,
                     review_emotion
                 from review
-                where review_emotion is not null
+                where 1=1
+                and review_emotion is not null
             """
             cursor.execute(query)
             rows = cursor.fetchall()

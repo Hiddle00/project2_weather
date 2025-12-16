@@ -1,7 +1,7 @@
 import mysql.connector
 from .utils.distance_module import haversine
 
-# 디비 연결 모듈   
+# 디비 연결 모듈
 DB_CONFIG = {
     'user': 'root',
     'password': 'ezen',
@@ -22,8 +22,8 @@ def get_nearby_restaurants(lat, lon, offset=0, limit=10, food_sort=None):
 
     haversine_formula = f"""
     (6371 * acos(
-        cos(radians(%s)) * cos(radians(y)) 
-        * cos(radians(x) - radians(%s)) 
+        cos(radians(%s)) * cos(radians(y))
+        * cos(radians(x) - radians(%s))
         + sin(radians(%s)) * sin(radians(y))
     ))
     """

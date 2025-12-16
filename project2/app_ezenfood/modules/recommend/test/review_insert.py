@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 import pandas as pd
-from app_ezenfood.modules.recommend.test.review_service import ReviewService
+from app_ezenfood.modules.recommend.service.review_service import ReviewService
 from app_ezenfood import CSV_DIR
 
 """

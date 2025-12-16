@@ -1,6 +1,6 @@
 import pandas as pd
-from .reco_rest import RestaurantRecommendationEngine
-from app_ezenfood.modules.recommend.test.reco_dao import RecommendDAO
+from app_ezenfood.modules.recommend.engine.reco_rest import RestaurantRecommendationEngine
+from app_ezenfood.modules.recommend.DAO.reco_dao import RecommendDAO
 from app_ezenfood.modules.utils.get_conn import get_root_conn
 from app_ezenfood import CSV_DIR
 

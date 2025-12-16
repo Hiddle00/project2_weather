@@ -140,7 +140,8 @@ let map = null;
 let geocoder = null;       
 let markers = [];          
 let userMarker = null;     
-
+let lat;
+let lon;
 let recommendations = [];  
 
 /*************************************************
@@ -229,7 +230,7 @@ async function loadWeather(lat, lon) {
         return { temp: "-", rain: 0, humidity: 0, pty: 0, sky: 1, cloud: 0 };
     }
 }
-
+// 날씨 화면 표시 함수
 function renderWeatherUI(w) {
     document.getElementById("temp").textContent = w.temp;
     document.getElementById("rain").textContent = w.rain;
@@ -248,7 +249,7 @@ function getSeason() {
     if (m <= 8) return 2;
     return 3;
 }
-
+// 수정 날씨 - 카테고리
 async function getRecommendations(weather) {
     const url = `/api/recommend?season=${getSeason()}&pty=${weather.pty}&temp=${weather.temp}&humidity=${weather.humidity}`;
     try {
@@ -263,7 +264,7 @@ async function getRecommendations(weather) {
 }
 
 /*************************************************
- * 사이드 카드 (백엔드 추천)
+ * 사이드 카드 (백엔드 추천) 받으면 카테고리(음식) 목록 표시
  *************************************************/
 function renderSideCard() {
     const ul = document.getElementById("foodListCard");
@@ -280,7 +281,7 @@ function renderSideCard() {
 }
 
 /*************************************************
- * 음식점 조회
+ * 음식점 조회 수정필요
  *************************************************/
 async function fetchRestaurants(food, lat, lon) {
     let url = `/api/restaurants?lat=${lat}&lon=${lon}`;
@@ -293,12 +294,14 @@ async function fetchRestaurants(food, lat, lon) {
     }
 }
 
+// 수정필요 검색용 함수
 async function searchRestaurants(food) {
     const center = map.getCenter();
     const list = await fetchRestaurants(food, center.getLat(), center.getLng());
     renderRestaurants(list);
 }
 
+// 가게 목록 표시 함수
 function renderRestaurants(list) {
     clearMarkers();
     const ul = document.getElementById("restaurantList");

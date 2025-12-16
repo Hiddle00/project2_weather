@@ -84,11 +84,12 @@ class MapService:
                 return default
 
         try:
-            res = requests.get(url, params=params, timeout=5)
-            res.raise_for_status()
-            data = res.json()
+            response = requests.get(url, params=params, timeout=5)
+            response.raise_for_status()
+            data = response.json()
 
             items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
+            print(items)
             weather = {"temp": "-", "rain": 0, "humidity": 0, "pty": 0, "sky": 1}
 
             for it in items:
@@ -97,7 +98,7 @@ class MapService:
                 if cat == "T1H": weather["temp"] = safe_float(val, "-")
                 elif cat == "RN1": weather["rain"] = safe_float(val)
                 elif cat == "REH": weather["humidity"] = safe_float(val)
-                elif cat == "SKY": weather["sky"] = int(val) if val.isdigit() else 1
+                #elif cat == "SKY": weather["sky"] = int(val) if val.isdigit() else 1
                 elif cat == "PTY": weather["pty"] = int(val) if val.isdigit() else 0
 
             return weather
@@ -105,5 +106,3 @@ class MapService:
         except Exception as e:
             print(f"Weather API error: {e}")
             return {"temp": "-", "rain": 0, "humidity": 0, "pty": 0, "sky": 1}
-
-  

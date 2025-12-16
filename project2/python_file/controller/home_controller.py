@@ -35,8 +35,11 @@ class HomeController:
         try:
             lat = float(args.get('lat'))
             lon = float(args.get('lon'))
+            # 
             offset = int(args.get('offset', 0))
+            # 
             limit = int(args.get('limit', 10))
+            # 단일 카테고리
             food_sort = args.get('food_sort')
 
             restaurants = db_module.get_nearby_restaurants(lat, lon, offset, limit, food_sort)
