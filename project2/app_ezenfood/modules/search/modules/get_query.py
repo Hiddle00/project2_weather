@@ -1,4 +1,4 @@
-from project2.app_ezenfood.modules.search.modules.cosine_similarity import cosine_similarity as cs
+from app_ezenfood.modules.search.modules.cosine_similarity import cosine_similarity as cs
 import numpy as np
 import json
 
@@ -13,10 +13,10 @@ def get_query(query, rows, model) :
 
     for row in rows :
         # 문장 임베딩 - JSON 문자열
-        sent_emb    = np.array(json.loads(row['sub_embedding']))
+        sent_emb    = np.array(json.loads(row['sub_sentemb']))
 
         # 키워드 리스트 임베딩 - JSON 문자열
-        kw_emb_list = [np.array(k) for k in json.loads(row['sub_keyword'])]
+        kw_emb_list = [np.array(k) for k in json.loads(row['sub_keyemb'])]
 
         # 쿼리 벡터값과 문장 벡터값의 유사도
         sim_sent = cs(query_emb, sent_emb)

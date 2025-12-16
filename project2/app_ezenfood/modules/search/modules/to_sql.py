@@ -6,14 +6,14 @@ import pymysql # PyMySQL은 SQLAlchemy의 MySQL 드라이버로 사용됨
 
 db_user     = '유재욱'
 db_password = 'ezen'
-db_host     = '192.168.60.179' # 또는 MySQL 서버 주소
+db_host     = '192.168.60.179'
 db_name     = 'ezeneats'
 table_name  = 'rest'
 
 
 # --- 2. SQLAlchemy 엔진 생성 ---
 # MySQL + PyMySQL 드라이버를 사용함을 명시 (mysql+pymysql)
-# اتصال 문자열 형식: 'mysql+pymysql://<user>:<password>@<host>/<dbname>'
+# 문자열 형식: 'mysql+pymysql://<user>:<password>@<host>/<dbname>'
 db_connection_str = f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'
 engine = create_engine(db_connection_str)
 

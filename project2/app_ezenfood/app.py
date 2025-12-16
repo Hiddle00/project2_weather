@@ -1,20 +1,22 @@
 from flask import Flask, request, render_template
 from flask_cors import CORS
-from .modules.map_api import init_app as map_init
+from app_ezenfood.modules.map_api import init_app as map_init
 from pathlib import Path
 from dotenv import load_dotenv
 from app_ezenfood.modules.recommend.routes.router import recommend_bp
+from app_ezenfood.modules.search.route import search_bp
 import os
 # 뭣만 하면 CSV_DIR 오류 만 하루종일 뜨길래 오류 덜뜨게 수정 완료 모듈구동법 수정함
 
 BASE_DIR = Path(__file__).resolve().parent
 CSV_DIR = BASE_DIR / "csv"
 
-
+# python -m app_ezenfood.app
     
 app = Flask(__name__)
 CORS(app)
 app.register_blueprint(recommend_bp)
+app.register_blueprint(search_bp)
 
 # 맵 init 호출
 map_init(app)

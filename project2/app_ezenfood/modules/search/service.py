@@ -21,7 +21,8 @@ class SearchService :
         rests = {}
         for sub in sorted_subs :
             name = sub['sub_name']
-            rests[name] = self.rest_dao.select_by_sub(name)[:5]
+            id   = sub['sub_id']
+            rests[name] = self.rest_dao.select_by_sub(id)[:5]
 
         return {"subs": sorted_subs, "rests": rests}
 

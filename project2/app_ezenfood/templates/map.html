@@ -22,10 +22,10 @@
         
         <!-- 타이틀 -->
         <div class="search-box">
-            <input id="locationInput" placeholder="예: OO동 or 음식점 이름">
-            <button id="searchButton">조회하기</button>
+            <input id="query" placeholder="예: OO동 or 음식점 이름">
+            <button onclick="search()">조회하기</button>
         </div>
-
+        <div id="results"></div>
         
         <p>
             <a href="#" 
@@ -195,6 +195,60 @@ function geocodeAddress(address) {
     });
 }
 
+/*************************************************
+ * 검색 관련
+ *************************************************/
+async function search() {
+        const query = document.getElementById("query").value.trim();
+        
+        if (!query) 
+        {
+            alert("검색어를 입력하세요.");
+            return;
+        }
+
+        try 
+        {
+            const res  = await fetch(`/search?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+
+            if (data.error) 
+            {
+                alert(data.error);
+                return;
+            }
+
+            const resultsDiv     = document.getElementById("results");
+            resultsDiv.innerHTML = "";
+
+            data.subs.forEach(sub => 
+            {
+                const subName = sub.sub_name;
+
+                const subBlock     = document.createElement("div");
+                subBlock.className = "sub-block";
+
+                const subTitle       = document.createElement("h3");
+                subTitle.textContent = subName;
+                subBlock.appendChild(subTitle);
+
+                const restList = document.createElement("ul");
+                const restData = data.rests[subName] || [];
+                restData.forEach(rest => {
+                    const li       = document.createElement("li");
+                    li.textContent = rest.rest_name; 
+                    restList.appendChild(li);
+                });
+                subBlock.appendChild(restList);
+                resultsDiv.appendChild(subBlock);
+            });
+
+        } catch (err) 
+        {
+            console.error(err);
+            alert("검색 중 오류가 발생했습니다.");
+        }
+    }
 /*************************************************
  * 지도 관련
  *************************************************/
