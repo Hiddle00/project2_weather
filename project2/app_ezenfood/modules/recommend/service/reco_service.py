@@ -14,6 +14,7 @@ class RestaurantRecommendService:
         self.reco_dao = RecommendDAO(get_root_conn)
         self.engine   = RestaurantRecommendationEngine()
 
+    # 리뷰기반 추천도 계산 메서드
     def _calculate_positive_ratio(
         self,
         rest_df   : pd.DataFrame,
@@ -48,6 +49,7 @@ class RestaurantRecommendService:
 
         return df
     
+    # 음식점 추천 로직 top_n 개수만큼 반환
     def recommend_restaurants(
         self,
         sub_id          : int,
@@ -75,7 +77,9 @@ class RestaurantRecommendService:
         print(rest_df['rest_y'].iloc[1])
         #print(rest_df['rest_y'].iloc[2])
         #print(rest_df['rest_y'].iloc[3])
+        
         # 3. 추천 엔진 실행
+        # 리뷰 추천도, 리뷰갯수, 거리로 최종 추천 점수를 추가한 df반환
         scored_df = self.engine.rest_score(
             user_lat        = user_lat,
             user_lon        = user_lon,

@@ -16,6 +16,8 @@ class RecommendDAO:
                     r.rest_name,
                     r.rest_x,
                     r.rest_y,
+                    r.rest_addr,
+                    r.rest_old,
                     r.review_count
                 from rest r
                 where 1=1
