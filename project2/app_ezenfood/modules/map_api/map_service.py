@@ -65,18 +65,21 @@ class MapService:
         base_date_str = now.strftime("%Y%m%d")
         base_time = now.strftime("%H") + "00"
         
-        url = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
+        #초단기예보로 조회하게 변경
+        url = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst"
         params = {
             "serviceKey": service_key,
             "numOfRows": 100,
-            "pageNo": 1,
+            "pageNo": 2,
             "dataType": "JSON",
             "base_date": base_date_str,
             "base_time": base_time,
             "nx": nx,
             "ny": ny
         }
-
+        """응답형태
+        
+        """
         def safe_float(v, default=0):
             try:
                 return float(v)
@@ -94,11 +97,12 @@ class MapService:
 
             for it in items:
                 cat = it.get("category")
-                val = it.get("obsrValue")
+                val = it.get("fcstValue") # 초단기예보 변수명으로 변경
+                #val = it.get("obsrValue") 단기실황?에서 사용하는 응답값 변수명
                 if cat == "T1H": weather["temp"] = safe_float(val, "-")
                 elif cat == "RN1": weather["rain"] = safe_float(val)
                 elif cat == "REH": weather["humidity"] = safe_float(val)
-                #elif cat == "SKY": weather["sky"] = int(val) if val.isdigit() else 1
+                elif cat == "SKY": weather["sky"] = int(val) if val.isdigit() else 1
                 elif cat == "PTY": weather["pty"] = int(val) if val.isdigit() else 0
 
             return weather

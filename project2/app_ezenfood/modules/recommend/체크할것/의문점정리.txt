@@ -16,3 +16,5 @@ review_dao.insert_reviews의 data for문의 _ , row와 df.iterrows()
 컷오프 후 결과 0이면 UI에서 “주변에 음식점이 없습니다” 처리
 
 리뷰 0개 가게의 처리 전략
+
+프론트에서 파라미터로 넘어온 인자 df나 json으로 변환(라우터단)

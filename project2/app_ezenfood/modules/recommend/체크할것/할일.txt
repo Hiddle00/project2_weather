@@ -4,13 +4,13 @@
 Ctrl + backspace/Delete 안되는거
 컬럼 수정 할 때 탭키 엔터키
 
-
-카테고리 코드 service dao db - 진행중
 위치or거리  service dao db - 완
 db에서 음식점 목록 - 완
 
-
 리뷰 insert덜 끝남 - 완
 
+
+
+카테고리 코드 service dao db - 진행중
 카테고리 추천엔진 테스트 + 병합
-작성한 코드 정리하고 라우터 작성
+작성한 코드 정리하고 라우터 작성 - 완

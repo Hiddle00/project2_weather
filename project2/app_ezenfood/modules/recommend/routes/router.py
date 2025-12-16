@@ -10,8 +10,8 @@ recommend_bp = Blueprint(
     __name__,
     url_prefix="/api/recommend"
 )
-
 service = RestaurantRecommendService()
+
 # 카테고리 추천 API
 @recommend_bp.route("/categorys", methods=["GET"])
 #@recommend_bp.route("/<weather>", methods=["GET"])
@@ -27,13 +27,13 @@ def recommend_categorys() :
 #@recommend_bp.route("/<category>", methods=["GET"])
 def recommend_restaurants() :
     """
-    필수 파라미터:
-      - sub_id
-      - lat
-      - lon
-    선택:
-      - max_distance_km 최대거리
-      - top_n 음식점 몇 개 까지 가져올건지 limit
+    필수 파라미터 :
+    - sub_id            카테고리 아이디
+    - lat               유저 위도 (y)
+    - lon               유저 경도 (x)
+    선택 :
+    - max_distance_km   최대거리
+    - top_n             음식점 몇 개 까지 가져올건지 limit
     """
 
     try :
@@ -48,20 +48,48 @@ def recommend_restaurants() :
     max_distance_km = float(request.args.get("distance", 1.0))
     top_n           = int(request.args.get("top_n", 5))
 
-    result_df = service.recommend_restaurants(
-        sub_id          = sub_id,
-        user_lat        = user_lat,
-        user_lon        = user_lon,
-        max_distance_km = max_distance_km,
-        top_n           = top_n
-    )
+    try :
+        result_df = service.recommend_restaurants(
+            sub_id          = sub_id,
+            user_lat        = user_lat,
+            user_lon        = user_lon,
+            max_distance_km = max_distance_km,
+            top_n           = top_n
+        )
+    except (ValueError) :
+        return jsonify({
+            "error": "반경 내에 음식점이 없습니다."
+        }), 400
+        
     if result_df.empty :
-        return jsonify({"restaurants" : []})
+        return jsonify({"restaurants" : []}), 500
     return jsonify({
         "count"       : len(result_df),
         "restaurants" : result_df.to_dict(orient="records")
-    })
+    }), 200
 
+    """ 응답 예제 :
+    {
+        "count": 5,
+        "restaurants": [
+        {
+            "distance_km": 0.257616157970359,
+            "distance_score": 0.795155178042463,
+            "final_score": 0.584031035608493,
+            "positive_ratio": 0.25,
+            "positive_reviews": 0,
+            "rest_addr": "전북특별자치도 전주시 완산구 풍남문3길 26",
+            "rest_id": 3322,
+            "rest_name": "양식당",
+            "rest_old": "전북특별자치도 전주시 완산구 전동 110-1",
+            "rest_x": 127.1471442,
+            "rest_y": 35.814932,
+            "review_count": 140,
+            "review_score": 1,
+            "sentiment_score": 0.25,
+            "total_reviews": 10
+        }, * top_n
+    """
 
 # 리뷰 insert API
 @recommend_bp.route("/reviews/import", methods=["POST"])

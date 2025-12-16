@@ -112,11 +112,11 @@ async function loadWeather(lat, lon) {
 
         let weather={ temp:"-", cloud:"-", rain:"-", humidity:"-", pty:0, sky:1 };
         items.forEach(it => { switch(it.category){
-            case "T1H": weather.temp=it.obsrValue; break;
-            case "RN1": weather.rain=it.obsrValue; break;
-            case "REH": weather.humidity=it.obsrValue; break;
-            case "SKY": weather.sky=it.obsrValue; break;
-            case "PTY": weather.pty=it.obsrValue; break;
+            case "T1H": weather.temp=it.obsrValue; break; //기온
+            case "RN1": weather.rain=it.obsrValue; break; //시간당 강수량
+            case "REH": weather.humidity=it.obsrValue; break; //습도
+            //case "SKY": weather.sky=it.obsrValue; break;
+            case "PTY": weather.pty=it.obsrValue; break; //강수형태
         }});
         if(weather.sky!="-") weather.cloud=(weather.sky/4*100).toFixed(0);
         const iconName = getWeatherIcon(weather.pty, weather.sky, weather.cloud, weather.rain);

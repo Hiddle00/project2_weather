@@ -23,7 +23,7 @@ class RecommendDAO:
                 where 1=1
                 and r.sub_id=%s
             """
-            # where r.rest_display  = 'Y'
+            # and r.rest_display  = 'Y'
             cursor.execute(query, (sub_id,))
             rows = cursor.fetchall()
             df = pd.DataFrame(rows)

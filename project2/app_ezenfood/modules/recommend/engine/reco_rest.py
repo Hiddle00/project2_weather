@@ -34,7 +34,7 @@ class RestaurantRecommendationEngine:
         )
         return df
 
-    # 추천 로직
+    # 추천 점수 산출 로직
     def rest_score(
         self,
         user_lat: float,
