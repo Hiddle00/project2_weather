@@ -368,9 +368,10 @@ function getSeason() {
     if (m <= 8) return 2;
     return 3;
 }
-// 수정 날씨 - 카테고리
-async function getRecommendations(weather) {
-    const url = `/api/recommend?season=${getSeason()}&pty=${weather.pty}&temp=${weather.temp}&humidity=${weather.humidity}`;
+// 날씨 - 카테고리
+// 확인필요
+async function getRecommendations(lat, lon) {
+    const url = `/api/recommend/categories?lat=${lat}&lon=${lon}`;
     try {
         const res = await fetch(url);
         const data = await res.json();
@@ -402,8 +403,9 @@ function renderSideCard() {
 /*************************************************
  * 음식점 조회 수정필요
  *************************************************/
+ // 확인필요
 async function fetchRestaurants(food, lat, lon) {
-    let url = `/api/restaurants?lat=${lat}&lon=${lon}`;
+    let url = `/api/recommend/restaurants?lat=${lat}&lon=${lon}`;
     if (food) url += `&food_sort=${encodeURIComponent(food)}`;
     try {
         const res = await fetch(url);
@@ -433,14 +435,18 @@ function renderRestaurants(list) {
         markers.push(marker);
 
         // infoWindow 생성 (DB 컬럼명 반영)
+        // 개업??
+        // 확인필요
         const content = `<div style="padding:5px;font-size:12px;">
                             <b>${r.rest_name}</b><br>
-                            지번: ${r.rest_dong ?? "-"}<br>
+                            행정동명: ${r.rest_dong ?? "-"}<br>
+                            지번: ${r.rest_old ?? "-"}<br>
                             도로명: ${r.rest_addr ?? "-"}<br>
                             리뷰: ${r.review_count ?? "-"}<br>
                             개업: ${r.rest_old ?? "-"}년
                          </div>`;
         const infowindow = new kakao.maps.InfoWindow({ content });
+/************************************************/
 
         // 마커 클릭 시 infoWindow 오픈
         marker.addListener('click', () => {
@@ -492,11 +498,13 @@ function closePanel() {
 /*************************************************
  * 메인 플로우
  *************************************************/
+ // 확인필요
 async function mainFlow(pos) {
     moveMap(pos.lat, pos.lon);
     const weather = await loadWeather(pos.lat, pos.lon);
     renderWeatherUI(weather);
-    await getRecommendations(weather);
+    const center = map.getCenter();
+    await getRecommendations(center.getLat(), center.getLng());
 }
 
 /*************************************************
