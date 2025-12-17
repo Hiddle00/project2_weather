@@ -24,25 +24,23 @@ class CategoryRecommendEngine :
             return None, None, None
 
 
-    def recommend_food(self, features : dict) -> dict :
+    def recommend_food(self, features: dict) -> dict:
         features = features.copy()
 
+        # pty 처리: 강수량 결정
         pty = features.get('pty', 0)
         rain = features.get('강수량', 0)
-
-        # 삼항 연산자 참 if 조건 else 거짓
         features['강수량'] = 1.0 if pty in [1,2,3,4,5,6,7] else rain
-        print("effective_rain : ", features['강수량'])
 
-        df = pd.DataFrame([features])
-        print("df : ", df)
+        # SCALER 학습 시 사용한 컬럼만 남기고, 누락 컬럼은 0으로 채우기
+        allowed_cols = self.SCALER_MODEL.feature_names_in_
+        df = pd.DataFrame([{col: features.get(col, 0) for col in allowed_cols}])
+
+        # SCALER 변환
         X_scaled = self.SCALER_MODEL.transform(df)
-        print("X_scaled : ", X_scaled)
 
-        # 중심점 거리 계산
+        # KMeans 중심점 거리 계산
         distances = np.linalg.norm(self.KMEANS_MODEL.cluster_centers_ - X_scaled, axis=1)
-        print("distances : ", distances)
-        print("--" * 25)
         top3_ids = np.argsort(distances)[:3]
         top3_foods = [self.CLUSTER_NAME_MAP.get(int(i), "추천 정보 없음") for i in top3_ids]
 
@@ -50,3 +48,43 @@ class CategoryRecommendEngine :
             "top3_clusters": [int(i) for i in top3_ids],
             "recommendations": top3_foods
         }
+
+    
+    
+    
+    
+    
+    
+    # def recommend_food(self, features : dict) -> dict :
+    #     features = features.copy()
+
+    #     # pty = features.get('pty', 0)
+    #     # rain = features.get('강수량', 0)
+
+    #     # # 삼항 연산자 참 if 조건 else 거짓
+    #     # features['강수량'] = 1.0 if pty in [1,2,3,4,5,6,7] else rain
+    #     # print("effective_rain : ", features['강수량'])
+
+    #     # df = pd.DataFrame([features])
+    #     # print("df : ", df)
+    #     # X_scaled = self.SCALER_MODEL.transform(df)
+    #     # print("X_scaled : ", X_scaled)
+
+    #     # 학습 시 사용한 컬럼만 남기기
+    #     allowed_cols = ["시간", "기온", "강수량", "습도"]
+    #     df = pd.DataFrame([{k:v for k,v in features.items() if k in allowed_cols}])
+
+    #     X_scaled = self.SCALER_MODEL.transform(df)
+
+        
+    #     # 중심점 거리 계산
+    #     distances = np.linalg.norm(self.KMEANS_MODEL.cluster_centers_ - X_scaled, axis=1)
+    #     print("distances : ", distances)
+    #     print("--" * 25)
+    #     top3_ids = np.argsort(distances)[:3]
+    #     top3_foods = [self.CLUSTER_NAME_MAP.get(int(i), "추천 정보 없음") for i in top3_ids]
+
+    #     return {
+    #         "top3_clusters": [int(i) for i in top3_ids],
+    #         "recommendations": top3_foods
+    #     }

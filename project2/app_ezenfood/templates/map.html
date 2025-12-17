@@ -184,9 +184,6 @@ function initKakaoMap(lat = 35.8242, lon = 127.1480, level = 4) {
  * 위치 관련
  *************************************************/
 function getUserLocation() {
-
-    const type = document.getElementById("searchType")?.value;
-    if (type !== "addr") return Promise.reject("not addr search");
     
     return new Promise(resolve => {
         // GPS기능 작동 안하면 전주시청 좌표 반환
@@ -375,9 +372,18 @@ async function getRecommendations(lat, lon) {
     try {
         const res = await fetch(url);
         const data = await res.json();
-        recommendations = (data.recommendations || []).slice(0, 3);
+
+        // 🔹 백엔드 구조(top3_clusters + recommendations) → JS 기대 구조(id, name)로 변환
+        recommendations = (data.top3_clusters || []).map((clusterId, idx) => ({
+    id: clusterId,                     // 클러스터 ID
+    name: data.recommendations[idx] || "추천 정보 없음"
+}));
+
+
+        // 🔹 사이드 카드 렌더링
         renderSideCard();
-    } catch {
+    } catch (err) {
+        console.error(err);
         recommendations = [];
         renderSideCard();
     }
@@ -390,14 +396,14 @@ function renderSideCard() {
     const ul = document.getElementById("foodListCard");
     ul.innerHTML = "";
 
-    // recommendations 배열: [{id:1,name:"한식"}, ...] 형태 가정
+    // recommendations 배열: [{id, name}] 형태
     recommendations.slice(0, 3).forEach(cat => {
         const li = document.createElement("li");
         li.textContent = cat.name;
         li.style.cursor = "pointer";
 
-        // 클릭 시 추천 API 호출
         li.onclick = async () => {
+            // 클릭하면 해당 카테고리 음식점 호출
             const pos = map.getCenter();
             const lat = pos.getLat();
             const lon = pos.getLng();
@@ -406,7 +412,7 @@ function renderSideCard() {
                 const data = await res.json();
                 renderRestaurants(data.restaurants || []);
             } catch (err) {
-                console.error(err);
+                console.error("추천 음식점 불러오기 실패", err);
                 alert("추천 음식점 불러오기 실패");
             }
         };
@@ -517,21 +523,32 @@ function closePanel() {
  * 메인 플로우
  *************************************************/
  // 확인필요
+// mainFlow 수정
 async function mainFlow(pos) {
     moveMap(pos.lat, pos.lon);
+
     const weather = await loadWeather(pos.lat, pos.lon);
     renderWeatherUI(weather);
 
-    await getRecommendations(weather); // recommendations 배열 업데이트 & renderSideCard 호출
+    await getRecommendations(pos.lat, pos.lon);
 
-    // 첫 번째 카테고리 자동 표시
+    // 첫 번째 추천 카테고리 sub_id로 음식점 호출
     if (recommendations.length > 0) {
-        const firstCat = recommendations[0];
-        const res = await fetch(`/api/recommend/restaurants?sub_id=${firstCat.id}&lat=${pos.lat}&lon=${pos.lon}&top_n=10`);
-        const data = await res.json();
-        renderRestaurants(data.restaurants || []);
+        const firstCat = recommendations[0]; // {id, name}
+        try {
+            const res = await fetch(`/api/recommend/restaurants?sub_id=${firstCat.id}&lat=${pos.lat}&lon=${pos.lon}&top_n=10`);
+            const data = await res.json();
+            renderRestaurants(data.restaurants || []);
+        } catch (err) {
+            console.error("추천 음식점 불러오기 실패", err);
+        }
     }
 }
+
+
+
+
+
 
 
 /*************************************************
@@ -542,15 +559,11 @@ window.addEventListener("DOMContentLoaded", () => {
         initKakaoMap();
         renderFloatingPanel();
 
+        // 현재 위치 가져와서 메인 플로우 실행
         const pos = await getUserLocation();
         await mainFlow(pos);
 
-        document.getElementById("searchButton").onclick = async () => {
-            const q = document.getElementById("locationInput").value.trim();
-            const p = q ? await geocodeAddress(q) : await getUserLocation();
-            await mainFlow(p);
-        };
-
+        // 위치 버튼
         document.getElementById("geoBtn").onclick = async () => {
             const p = await getUserLocation();
             await mainFlow(p);
