@@ -59,6 +59,17 @@ class MapService:
         coords = self.dfs_xy_conv(lat, lon)
         nx, ny = coords["x"], coords["y"]
 
+        """
+            기상청 예보 API는 매 정시(00분)에 데이터가 생성되지만,
+            실제로 API에서 조회 가능해지는 건 약 40분 이후 
+            그래서 현재 시간이 40분 미만이면 시(hour)에서 1을 빼준다
+
+            timedelta : 시간의 차이를 나타내는 클래스
+            timedelta(days=1)      1일
+            timedelta(hours=1)     1시간
+            timedelta(minutes=30)  30분
+            timedelta(seconds=10)  10초...
+        """
         now = datetime.now()
         if now.minute < 40:
             now -= timedelta(hours=1)
@@ -137,8 +148,8 @@ class MapService:
             "LGT" : "lightning",
             "SNO" : "snow"
         }
-        
-        def safe_float(v, default=0) -> dict | float :
+        # ->(화살표) : return값의 타입 힌트
+        def safe_float(v, default=0) -> str | float :
             try:
                 return float(v)
             except:
