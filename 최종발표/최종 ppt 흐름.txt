@@ -25,6 +25,9 @@
 데이터 구성 및 활용
 활용 데이터
 리뷰 긍/부정 라벨링 LR
+왜 tfidf로 벡터화 했는지
+유사도 행렬을 왜 코사인 유사도로 시각화 했는지??
+
 카테고리&키워드 
 
 
@@ -72,3 +75,8 @@ Flask (Controller / Service / Engine)
 Weather API
 MySQL
 ML Model (KMeans, TF-IDF 등)
+
+
+
+근거에 대한 얘기 많이하기
+지금 만든건 데이터 플로우에 가깝다
