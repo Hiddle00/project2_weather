@@ -390,15 +390,33 @@ function renderSideCard() {
     const ul = document.getElementById("foodListCard");
     ul.innerHTML = "";
 
-    recommendations.forEach(food => {
+    // recommendations 배열: [{id:1,name:"한식"}, ...] 형태 가정
+    recommendations.slice(0, 3).forEach(cat => {
         const li = document.createElement("li");
-        li.textContent = food;
-        li.onclick = () => searchRestaurants(food);
+        li.textContent = cat.name;
+        li.style.cursor = "pointer";
+
+        // 클릭 시 추천 API 호출
+        li.onclick = async () => {
+            const pos = map.getCenter();
+            const lat = pos.getLat();
+            const lon = pos.getLng();
+            try {
+                const res = await fetch(`/api/recommend/restaurants?sub_id=${cat.id}&lat=${lat}&lon=${lon}&top_n=10`);
+                const data = await res.json();
+                renderRestaurants(data.restaurants || []);
+            } catch (err) {
+                console.error(err);
+                alert("추천 음식점 불러오기 실패");
+            }
+        };
+
         ul.appendChild(li);
     });
 
     document.getElementById("foodCard").style.display = "block";
 }
+
 
 /*************************************************
  * 음식점 조회 수정필요
@@ -503,9 +521,18 @@ async function mainFlow(pos) {
     moveMap(pos.lat, pos.lon);
     const weather = await loadWeather(pos.lat, pos.lon);
     renderWeatherUI(weather);
-    const center = map.getCenter();
-    await getRecommendations(center.getLat(), center.getLng());
+
+    await getRecommendations(weather); // recommendations 배열 업데이트 & renderSideCard 호출
+
+    // 첫 번째 카테고리 자동 표시
+    if (recommendations.length > 0) {
+        const firstCat = recommendations[0];
+        const res = await fetch(`/api/recommend/restaurants?sub_id=${firstCat.id}&lat=${pos.lat}&lon=${pos.lon}&top_n=10`);
+        const data = await res.json();
+        renderRestaurants(data.restaurants || []);
+    }
 }
+
 
 /*************************************************
  * 이벤트 바인딩
