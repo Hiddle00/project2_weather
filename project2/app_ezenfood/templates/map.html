@@ -165,111 +165,6 @@
                 "해산물 구이/찜","횟집"
             ];
 
-<<<<<<< Updated upstream
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<button id="geoBtn" 
-    style="
-        position: fixed;
-        top: 15px;
-        right: 15px;
-        width: 55px;
-        height: 55px;
-        background: #007bff;
-        border: none;
-        color: white;
-        border-radius: 50%;
-        font-size: 22px;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-        z-index: 999;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    ">
-    📍
-</button>
-
-
-<script>
-/*************************************************
- * 전역 변수
- *************************************************/
-let map = null;            
-let geocoder = null;       
-let markers = [];          
-let userMarker = null;     
-let lat;
-let lon;
-let recommendations = [];  
-
-/*************************************************
- * 고정 추천 음식 (floating panel 전용)
- *************************************************/
-const fixedRecommendations = [
-    "경양식","곱창 전골/구이","국/탕/찌개류","국수/칼국수","김밥/만두/분식",
-    "냉면/밀면","닭/오리고기 구이/찜","돼지고기 구이/찜","마라탕/훠궈",
-    "백반/한정식","베트남식 전문","빵/도넛","소고기 구이/찜","일식 면 요리",
-    "일식 카레/돈가스/덮밥","일식 회/초밥","전/부침개","토스트/샌드위치/샐러드",
-    "해산물 구이/찜","횟집"
-];
-
-/*************************************************
- * Kakao Map 초기화
- *************************************************/
- // lat, lon 값없으면 기본값: 전주시청 적용 level= 확대,축소
-function initKakaoMap(lat = 35.8242, lon = 127.1480, level = 4) {
-    // container변수 아이디 속성 map 위치 저장 
-    const container = document.getElementById("map");
-    // 카카오맵 객체 생성 기본 중심값 적용
-    map = new kakao.maps.Map(container, {
-        center: new kakao.maps.LatLng(lat, lon),
-        level
-    });
-    // geocoder 안에 카카오맵 서비스 주소 저장
-    geocoder = new kakao.maps.services.Geocoder();
-}
-
-/*************************************************
- * 위치 관련
- *************************************************/
-function getUserLocation() {
-    
-    return new Promise(resolve => {
-        // GPS기능 작동 안하면 전주시청 좌표 반환
-        if (!navigator.geolocation) {
-            resolve({ lat: 35.8242, lon: 127.1480 });
-            return;
-        }
-        // getUserLocation GPS기능 실행
-        navigator.geolocation.getCurrentPosition(
-            // 성공하면 사용자 위치 위도 경도 반환
-            pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-            // 실패하면 전주시청 위도 경도 반환
-            () => resolve({ lat: 35.8242, lon: 127.1480 })
-        );
-    });
-}
-/*************************************************
-* 검색창에 입력한 글자(주소)를 → 지도에서 쓸 좌표로 바꿔줌
-**************************************************/
-// address : 사용자가 검색창에 입력한 문자열
-function geocodeAddress(address) {
-    return new Promise((resolve, reject) => {
-        //카카오 지도 서버에 address 문자열을 보내서 좌표로 바꿔달라고 요청
-        geocoder.addressSearch(address, (result, status) => {
-            if (status === kakao.maps.services.Status.OK) {
-                // 주소의 위도 경도를 실수로 반환
-                resolve({ lat: parseFloat(result[0].y), lon: parseFloat(result[0].x) });
-            } else {
-                reject("주소 검색 실패");
-=======
             /*************************************************
             * Kakao Map 초기화
             *************************************************/
@@ -284,7 +179,6 @@ function geocodeAddress(address) {
                 });
                 // geocoder 안에 카카오맵 서비스 주소 저장
                 geocoder = new kakao.maps.services.Geocoder();
->>>>>>> Stashed changes
             }
 
             /*************************************************
@@ -602,41 +496,6 @@ function geocodeAddress(address) {
                 document.getElementById("floatingPanel").style.display = "none";
             }
 
-<<<<<<< Updated upstream
-/*************************************************
- * 백엔드 추천 (사이드 카드)
- *************************************************/
-function getSeason() {
-    const m = new Date().getMonth() + 1;
-    if (m <= 2) return 4;
-    if (m <= 5) return 1;
-    if (m <= 8) return 2;
-    return 3;
-}
-// 날씨 - 카테고리
-// 확인필요
-async function getRecommendations(lat, lon) {
-    const url = `/api/recommend/categories?lat=${lat}&lon=${lon}`;
-    try {
-        const res = await fetch(url);
-        const data = await res.json();
-
-        // 🔹 백엔드 구조(top3_clusters + recommendations) → JS 기대 구조(id, name)로 변환
-        recommendations = (data.top3_clusters || []).map((clusterId, idx) => ({
-    id: clusterId,                     // 클러스터 ID
-    name: data.recommendations[idx] || "추천 정보 없음"
-}));
-
-
-        // 🔹 사이드 카드 렌더링
-        renderSideCard();
-    } catch (err) {
-        console.error(err);
-        recommendations = [];
-        renderSideCard();
-    }
-}
-=======
             /*************************************************
             * 메인 플로우
             *************************************************/
@@ -648,7 +507,6 @@ async function getRecommendations(lat, lon) {
                 const center = map.getCenter();
                 await getRecommendations(center.getLat(), center.getLng());
             }
->>>>>>> Stashed changes
 
             /*************************************************
             * 이벤트 바인딩
@@ -658,34 +516,8 @@ async function getRecommendations(lat, lon) {
                     initKakaoMap();
                     renderFloatingPanel();
 
-<<<<<<< Updated upstream
-    // recommendations 배열: [{id, name}] 형태
-    recommendations.slice(0, 3).forEach(cat => {
-        const li = document.createElement("li");
-        li.textContent = cat.name;
-        li.style.cursor = "pointer";
-
-        li.onclick = async () => {
-            // 클릭하면 해당 카테고리 음식점 호출
-            const pos = map.getCenter();
-            const lat = pos.getLat();
-            const lon = pos.getLng();
-            try {
-                const res = await fetch(`/api/recommend/restaurants?sub_id=${cat.id}&lat=${lat}&lon=${lon}&top_n=10`);
-                const data = await res.json();
-                renderRestaurants(data.restaurants || []);
-            } catch (err) {
-                console.error("추천 음식점 불러오기 실패", err);
-                alert("추천 음식점 불러오기 실패");
-            }
-        };
-
-        ul.appendChild(li);
-    });
-=======
                     const pos = await getUserLocation();
                     await mainFlow(pos);
->>>>>>> Stashed changes
 
                     document.getElementById("searchButton").onclick = async () => {
                         const q = document.getElementById("locationInput").value.trim();
@@ -693,30 +525,12 @@ async function getRecommendations(lat, lon) {
                         await mainFlow(p);
                     };
 
-<<<<<<< Updated upstream
-
-/*************************************************
- * 음식점 조회 수정필요
- *************************************************/
- // 확인필요
-async function fetchRestaurants(food, lat, lon) {
-    let url = `/api/recommend/restaurants?lat=${lat}&lon=${lon}`;
-    if (food) url += `&food_sort=${encodeURIComponent(food)}`;
-    try {
-        const res = await fetch(url);
-        return await res.json();
-    } catch {
-        return [];
-    }
-}
-=======
                     document.getElementById("geoBtn").onclick = async () => {
                         const p = await getUserLocation();
                         await mainFlow(p);
                     };
                 });
             });
->>>>>>> Stashed changes
 
         </script>
 
