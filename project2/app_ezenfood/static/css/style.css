@@ -233,94 +233,57 @@ button:hover {
     border-radius: 15px 0 0 15px;
     overflow: hidden;
 }
-/* 플로팅 패널 스타일 */
+
+/* 플로팅 패널 전체 */
 .floating-panel {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 110px;
-    max-height: 180px;
-    background-color: #fff;
+    width: 250px;
+    max-height: 300px;       /* 높이 제한 후 스크롤 가능 */
+    overflow-y: auto;
+    background: white;
     border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    padding: 10px;
+    padding: 10px 10px 10px 10px; /* 닫기 버튼 공간 확보 */
     z-index: 9999;
-    overflow-y: auto;        /* 스크롤 가능 */
-    transition: opacity 0.3s ease;
-
-    /* 스크롤바 숨기기 */
-    scrollbar-width: none;    /* Firefox */
-    -ms-overflow-style: none; /* IE, Edge */
-}
-
-.floating-panel::-webkit-scrollbar {
-    display: none;            /* Chrome, Safari */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    border-radius: 8px;
 }
 
 /* 닫기 버튼 */
 .floating-panel .close-btn {
     position: absolute;
     top: 4px;
-    right: 6px;
-    background: none;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    background: #ff4d4f;
+    color: white;
+    font-size: 14px;
+    border-radius: 50%;
     border: none;
-    font-size: 16px;
     cursor: pointer;
-    color: #666;
+    text-align: center;
+    line-height: 18px;
+    padding: 0;
+    z-index: 1000;
 }
 .floating-panel .close-btn:hover {
-    color: #000;
+    background: #e60000;
 }
 
-.floating-panel h4 {
-    margin-top: 0;
-    font-size: 13px;
-    margin-bottom: 6px;
-}
-
-.food-item {
+/* 음식 아이템 */
+.floating-panel .food-item {
     font-size: 12px;
-    padding: 4px 0;
+    padding: 5px 8px;
     border-bottom: 1px solid #eee;
-    cursor: pointer;
-}
-.food-item:last-child {
-    border-bottom: none;
-}
-.food-item:hover {
-    color: #007bff;
-}
-.floating-panel {
-    position: fixed;      /* 화면 고정 */
-    bottom: 20px;         /* 아래쪽 여백 */
-    right: 20px;          /* 오른쪽 여백 */
-    width: 250px;
-    background: white;
-    border: 1px solid #ccc;
-    padding: 10px;
-    z-index: 9999;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    border-radius: 8px;
-}
-
-.flot-item {
-    padding: 5px;
     cursor: pointer;
     border-radius: 4px;
 }
-
-.flot-item:hover {
+.floating-panel .food-item:last-child {
+    border-bottom: none;
+}
+.floating-panel .food-item:hover {
     background-color: #f0f0f0;
+    color: #007bff;
 }
-
-.close-btn {
-    float: right;
-    cursor: pointer;
-    border: none;
-    background: transparent;
-    font-size: 18px;
-    margin-top: -5px;       /* 위쪽으로 살짝 이동 */
-    margin-right: -5px;     /* 오른쪽으로 살짝 이동 */
-}
-

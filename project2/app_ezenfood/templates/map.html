@@ -141,28 +141,89 @@
 </button>
 
 
+
+
 <script>
 /*************************************************
  * 전역 변수
  *************************************************/
-let map = null;            
-let geocoder = null;       
-let markers = [];          
-let userMarker = null;     
-let lat;
-let lon;
+let map = null;           // 카카오 맵 객체
+let geocoder = null;      // 주소 변환 객체
+let markers = {};         // {markerId: kakao.maps.Marker} → 마커 캐싱
+let userMarker = null;    
 let recommendations = [];  
+const restaurantCache = {};  // 음식점 캐싱 (sub_id 기준)
 
 /*************************************************
  * 고정 추천 음식 (floating panel 전용)
  *************************************************/
-const fixedRecommendations = [
-    "경양식","곱창 전골/구이","국/탕/찌개류","국수/칼국수","김밥/만두/분식",
-    "냉면/밀면","닭/오리고기 구이/찜","돼지고기 구이/찜","마라탕/훠궈",
-    "백반/한정식","베트남식 전문","빵/도넛","소고기 구이/찜","일식 면 요리",
-    "일식 카레/돈가스/덮밥","일식 회/초밥","전/부침개","토스트/샌드위치/샐러드",
-    "해산물 구이/찜","횟집"
-];
+// 기존 fixedRecommendations 삭제
+
+// cluster_name_map 기반 플로팅 패널 렌더링
+const cluster_name_map = {
+    0: '토스트·샌드위치',
+    1: '백반·한정식',
+    2: '냉·밀면',
+    3: '국·탕',
+    4: '국수',
+    5: '곱창',
+    6: '소고기',
+    7: '일식 돈가스·덮밥',
+    8: '빵',
+    9: '분식',
+    10: '닭요리',
+    11: '마라탕',
+    12: '해산물 구이·찜',
+    13: '경양식',
+    14: '베트남식',
+    15: '횟집',
+    16: '회·초밥',
+    17: '일식 면',
+    18: '전·부침개',
+    19: '돼지고기'
+};
+
+function renderFloatingPanel() {
+    const panel = document.getElementById("flotmenu");
+    panel.innerHTML = "";
+
+    // 음식 목록 생성
+    Object.entries(cluster_name_map).forEach(([id, name]) => {
+        const div = document.createElement("div");
+        div.textContent = name;
+        div.className = "food-item";
+
+        div.onclick = async () => {
+            // 현재 지도 중심 좌표
+            const pos = map.getCenter();
+            const lat = pos.getLat();
+            const lon = pos.getLng();
+
+            try {
+                const res = await fetch(`/api/recommend/restaurants?sub_id=${id}&lat=${lat}&lon=${lon}&top_n=10`);
+                const data = await res.json();
+                renderRestaurants(data.restaurants || []);
+            } catch (err) {
+                console.error("추천 음식점 불러오기 실패", err);
+                alert("추천 음식점 불러오기 실패");
+            }
+        };
+
+        panel.appendChild(div);
+    });
+}
+
+
+
+
+
+function openPanel() {
+    document.getElementById("floatingPanel").style.display = "block";
+}
+
+function closePanel() {
+    document.getElementById("floatingPanel").style.display = "none";
+}
 
 /*************************************************
  * Kakao Map 초기화
@@ -315,8 +376,8 @@ async function handleSearch() {
  * 지도 관련
  *************************************************/
 function clearMarkers() {
-    markers.forEach(m => m.setMap(null));
-    markers = [];
+    Object.values(markers).forEach(m => m.setMap(null));
+    markers = {};
 }
 
 function setUserMarker(lat, lon) {
@@ -424,17 +485,19 @@ function renderSideCard() {
 }
 
 
-/*************************************************
- * 음식점 조회 수정필요
- *************************************************/
- // 확인필요
-async function fetchRestaurants(food, lat, lon) {
-    let url = `/api/recommend/restaurants?lat=${lat}&lon=${lon}`;
-    if (food) url += `&food_sort=${encodeURIComponent(food)}`;
+// ----------------------------
+// 음식점 호출 (캐시 적용)
+// ----------------------------
+async function fetchRestaurantsCached(sub_id, lat, lon) {
+    if (restaurantCache[sub_id]) return restaurantCache[sub_id];
+
     try {
-        const res = await fetch(url);
-        return await res.json();
-    } catch {
+        const res = await fetch(`/api/recommend/restaurants?sub_id=${sub_id}&lat=${lat}&lon=${lon}&top_n=10`);
+        const data = await res.json();
+        restaurantCache[sub_id] = data.restaurants || [];
+        return restaurantCache[sub_id];
+    } catch (err) {
+        console.error("추천 음식점 불러오기 실패", err);
         return [];
     }
 }
@@ -452,15 +515,12 @@ function renderRestaurants(list) {
     const ul = document.getElementById("restaurantList");
     ul.innerHTML = "";
 
-    list.forEach(r => {
-        // DB 컬럼명에 맞춰 좌표 설정
+    list.forEach((r, idx) => {
         const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
-        const marker = new kakao.maps.Marker({ position: pos, map });
-        markers.push(marker);
 
-        // infoWindow 생성 (DB 컬럼명 반영)
-        // 개업??
-        // 확인필요
+        const marker = new kakao.maps.Marker({ position: pos, map });
+        markers[idx] = marker;
+
         const content = `<div style="padding:5px;font-size:12px;">
                             <b>${r.rest_name}</b><br>
                             행정동명: ${r.rest_dong ?? "-"}<br>
@@ -470,16 +530,13 @@ function renderRestaurants(list) {
                             개업: ${r.rest_old ?? "-"}년
                          </div>`;
         const infowindow = new kakao.maps.InfoWindow({ content });
-/************************************************/
 
-        // 마커 클릭 시 infoWindow 오픈
         marker.addListener('click', () => {
             map.setCenter(pos);
             map.setLevel(3);
             infowindow.open(map, marker);
         });
 
-        // 리스트 클릭 시 동일 동작
         const li = document.createElement("li");
         li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰)`;
         li.onclick = () => {
@@ -494,30 +551,7 @@ function renderRestaurants(list) {
 }
 
 
-/*************************************************
- * floating panel (고정 추천)
- *************************************************/
-function renderFloatingPanel() {
-    const panel = document.getElementById("flotmenu");
-    panel.innerHTML = "";
 
-    fixedRecommendations.forEach(food => {
-        const div = document.createElement("div");
-        div.textContent = food;
-        div.style.cursor = "pointer";
-        div.style.padding = "5px 0";
-        div.onclick = () => { searchRestaurants(food); closePanel(); };
-        panel.appendChild(div);
-    });
-}
-
-function openPanel() {
-    document.getElementById("floatingPanel").style.display = "block";
-}
-
-function closePanel() {
-    document.getElementById("floatingPanel").style.display = "none";
-}
 
 /*************************************************
  * 메인 플로우
@@ -527,21 +561,23 @@ function closePanel() {
 async function mainFlow(pos) {
     moveMap(pos.lat, pos.lon);
 
-    const weather = await loadWeather(pos.lat, pos.lon);
-    renderWeatherUI(weather);
+    try {
+        // 날씨 + 추천 API 병렬 호출
+        const [weather, _] = await Promise.all([
+            loadWeather(pos.lat, pos.lon),
+            getRecommendations(pos.lat, pos.lon)
+        ]);
 
-    await getRecommendations(pos.lat, pos.lon);
+        renderWeatherUI(weather);
 
-    // 첫 번째 추천 카테고리 sub_id로 음식점 호출
-    if (recommendations.length > 0) {
-        const firstCat = recommendations[0]; // {id, name}
-        try {
-            const res = await fetch(`/api/recommend/restaurants?sub_id=${firstCat.id}&lat=${pos.lat}&lon=${pos.lon}&top_n=10`);
-            const data = await res.json();
-            renderRestaurants(data.restaurants || []);
-        } catch (err) {
-            console.error("추천 음식점 불러오기 실패", err);
+        // 첫 번째 추천 카테고리 음식점
+        if (recommendations.length > 0) {
+            const firstCat = recommendations[0]; // {id, name}
+            const list = await fetchRestaurantsCached(firstCat.id, pos.lat, pos.lon);
+            renderRestaurants(list);
         }
+    } catch (err) {
+        console.error("메인 플로우 처리 중 오류", err);
     }
 }
 
