@@ -1,25 +1,55 @@
 from flask import Blueprint, request, jsonify
 from app_ezenfood.modules.recommend.service.reco_service import RestaurantRecommendService
 from app_ezenfood.modules.recommend.service.review_service import ReviewService
+from app_ezenfood.modules.recommend.service.category_service import CategoryRecommendService
 from app_ezenfood.modules.recommend.DAO.review_dao import ReviewDAO
+from app_ezenfood.modules.map_api.map_service import MapService
 from app_ezenfood.modules.utils.get_conn import get_root_conn
+from dotenv import load_dotenv
 import pandas as pd
+import os
 
 recommend_bp = Blueprint(
     "recommend",
     __name__,
     url_prefix="/api/recommend"
 )
-service = RestaurantRecommendService()
+recommend_service = RestaurantRecommendService()
+category_service  = CategoryRecommendService()
+map_service       = MapService()
+load_dotenv()
+WEATHER_KEY = os.getenv("WEATHER_API_KEY")
 
 # 카테고리 추천 API
-@recommend_bp.route("/categorys", methods=["GET"])
+@recommend_bp.route("/categories", methods=["GET"])
 #@recommend_bp.route("/<weather>", methods=["GET"])
-def recommend_categorys() :
+def recommend_categories() :
+    """
+    필수 파라미터 :
+    - lat               유저 위도 (y)
+    - lon               유저 경도 (x)
+    선택 :
+    - top_n             추천할 카테고리 개수 limit
+    """
     
-    pass
-
-    return ""
+    try :
+        user_lat = float(request.args.get("lat"))
+        user_lon = float(request.args.get("lon"))
+    except (TypeError, ValueError) :
+        return jsonify({
+            "error" : "lat, lon은 필수이며 숫자여야 합니다."
+        }), 400
+    top_n        = int(request.args.get("top_n", 5))
+    
+    # 날씨 조회
+    weather = map_service.get_weather(user_lat, user_lon, WEATHER_KEY)
+    
+    # 카테고리 추천
+    try :
+        result = category_service.recommend(weather)
+    except Exception as e :
+        return jsonify({"error" : "카테고리 추천 실패"}), 500
+    return jsonify(result)
 
 
 # 음식점 추천 API
@@ -49,7 +79,7 @@ def recommend_restaurants() :
     top_n           = int(request.args.get("top_n", 5))
 
     try :
-        result_df = service.recommend_restaurants(
+        result_df = recommend_service.recommend_restaurants(
             sub_id          = sub_id,
             user_lat        = user_lat,
             user_lon        = user_lon,
@@ -62,7 +92,7 @@ def recommend_restaurants() :
         }), 400
         
     if result_df.empty :
-        return jsonify({"restaurants" : []}), 500
+        return jsonify({"restaurants" : []})
     return jsonify({
         "count"       : len(result_df),
         "restaurants" : result_df.to_dict(orient="records")

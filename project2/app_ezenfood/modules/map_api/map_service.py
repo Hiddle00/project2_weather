@@ -78,9 +78,67 @@ class MapService:
             "ny": ny
         }
         """응답형태
-        
+        {
+        "response": {
+            "header": {
+            "resultCode": "00",
+            "resultMsg": "NORMAL_SERVICE"
+            },
+            "body": {
+            "dataType": "JSON",
+            "items": {
+                "item": [
+                {
+                    "baseDate": "20251216",
+                    "baseTime": "2130",
+                    "category": "LGT",
+                    "fcstDate": "20251216",
+                    "fcstTime": "2200",
+                    "fcstValue": "0",
+                    "nx": 63,
+                    "ny": 89
+                },
+                {"category": "PTY",}
+                {
+                    "category": "RN1",
+                    "fcstValue": "강수없음",
+                },
+                {
+                    "category": "SKY",
+                    "fcstValue": "4",
+                },
+                {"category": "T1H",},
+                {"category": "REH",},
+                {"category": "UUU",},
+                {"category": "VVV",},
+                {"category": "VEC",},
+                {"category": "WSD",}
+                ]
+            },
+            "pageNo": 2,
+            "numOfRows": 100,
+            "totalCount": 60
+            }
+        }}
         """
-        def safe_float(v, default=0):
+                    # 카테고리 매핑 테이블
+        
+        # 카테고리 매핑 테이블
+        CATEGORY_MAP = {
+            "T1H" : "temp",
+            "RN1" : "rain",
+            "REH" : "humidity",
+            "SKY" : "sky",
+            "PTY" : "pty",
+            "WSD" : "wind_speed",
+            "UUU" : "wind_u",
+            "VVV" : "wind_v",
+            "VEC" : "wind_dir",
+            "LGT" : "lightning",
+            "SNO" : "snow"
+        }
+        
+        def safe_float(v, default=0) -> dict | float :
             try:
                 return float(v)
             except:
@@ -92,18 +150,49 @@ class MapService:
             data = response.json()
 
             items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
-            print(items)
-            weather = {"temp": "-", "rain": 0, "humidity": 0, "pty": 0, "sky": 1}
-
+            print("items : ", items)
+            # ************************
+            # 초단기예보로 변경하면 6시간 분량의 응답이 와서 제일 가까운 응답만 걸러냄
+            min_time = min(
+                (item['fcstDate'], item['fcstTime']) for item in items
+            )
+            items = [
+                item for item in items
+                if (item['fcstDate'], item['fcstTime']) == min_time
+            ]
+            print("items : ", items)
+            
+            # 기본 weather 컨테이너
+            weather = {
+                "temp" : "-",
+                "rain" : 0,
+                "humidity" : 0,
+                "sky" : 1,
+                "pty" : 0,
+                "wind_speed" : None,
+                "wind_u" : None,
+                "wind_v" : None,
+                "wind_dir" : None,
+                "snow" : 0,
+                "lightning" : None,
+            }
+            
             for it in items:
                 cat = it.get("category")
                 val = it.get("fcstValue") # 초단기예보 변수명으로 변경
                 #val = it.get("obsrValue") 단기실황?에서 사용하는 응답값 변수명
-                if cat == "T1H": weather["temp"] = safe_float(val, "-")
-                elif cat == "RN1": weather["rain"] = safe_float(val)
-                elif cat == "REH": weather["humidity"] = safe_float(val)
-                elif cat == "SKY": weather["sky"] = int(val) if val.isdigit() else 1
-                elif cat == "PTY": weather["pty"] = int(val) if val.isdigit() else 0
+                if cat not in CATEGORY_MAP:
+                    continue
+
+                key = CATEGORY_MAP[cat]
+
+                # 타입 정규화
+                if key in ("sky", "pty") :
+                    weather[key] = int(val) if str(val).isdigit() else 0
+                elif key == "temp" :
+                    weather["temp"] = safe_float(val, "-")
+                else :
+                    weather[key] = safe_float(val, 0)
 
             return weather
 

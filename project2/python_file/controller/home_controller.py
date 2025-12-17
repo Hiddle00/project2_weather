@@ -1,16 +1,16 @@
 from flask import jsonify, render_template
-from modules import db_module
+from app_ezenfood.modules import db_module
 from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-from app_ezenfood.modules.recommend.engine import model_module
+from app_ezenfood.modules.recommend.engine.reco_category import CategoryRecommendEngine
 
 load_dotenv()
 
 KAKAO_MAP_KEY = os.getenv("KAKAO_MAP_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-
+engine = CategoryRecommendEngine()
 class HomeController:
     def index(self):
         return render_template('map.html', kakao_key=KAKAO_MAP_KEY, weather_key=WEATHER_API_KEY)
@@ -26,7 +26,7 @@ class HomeController:
                 "습도": float(args.get('humidity', 50.0)),
                 "pty": int(args.get('pty', 0))
             }
-            result = model_module.recommend_food(input_data)
+            result = engine.recommend_food(input_data)
             return jsonify(result)
         except Exception as e:
             return jsonify({"error": str(e)}), 500
