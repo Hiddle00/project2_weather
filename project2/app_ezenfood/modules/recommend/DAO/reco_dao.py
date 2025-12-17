@@ -18,7 +18,8 @@ class RecommendDAO:
                     r.rest_y,
                     r.rest_addr,
                     r.rest_old,
-                    r.review_count
+                    r.review_count,
+                    r.rest_dong
                 from rest r
                 where 1=1
                 and r.sub_id=%s

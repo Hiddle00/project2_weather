@@ -150,7 +150,7 @@ class MapService:
             data = response.json()
 
             items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
-            print("items : ", items)
+            #print("items : ", items)
             # ************************
             # 초단기예보로 변경하면 6시간 분량의 응답이 와서 제일 가까운 응답만 걸러냄
             min_time = min(
@@ -160,7 +160,7 @@ class MapService:
                 item for item in items
                 if (item['fcstDate'], item['fcstTime']) == min_time
             ]
-            print("items : ", items)
+            #print("items : ", items)  짧은거
             
             # 기본 weather 컨테이너
             weather = {

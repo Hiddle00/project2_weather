@@ -3,25 +3,39 @@ import pandas as pd
 import numpy as np
 from app_ezenfood import PKL_DIR
 
-class CategoryRecommendEngine :
-    def __init__(self) -> None :
-        self.KMEANS_MODEL, self.SCALER_MODEL, self.CLUSTER_NAME_MAP = self._load_models()
+# 🔹 모듈 로딩 시 한 번만 읽기
+with open(os.path.join(PKL_DIR, 'kmeans_model.pkl'), 'rb') as f:
+    KMEANS_MODEL = pickle.load(f)
+
+with open(os.path.join(PKL_DIR, 'scaler_model.pkl'), 'rb') as f:
+    SCALER_MODEL = pickle.load(f)
+
+with open(os.path.join(PKL_DIR, 'cluster_name_map.pkl'), 'rb') as f:
+    CLUSTER_NAME_MAP = pickle.load(f)
+
+class CategoryRecommendEngine:
+    def __init__(self) -> None:
+        self.KMEANS_MODEL = KMEANS_MODEL
+        self.SCALER_MODEL = SCALER_MODEL
+        self.CLUSTER_NAME_MAP = CLUSTER_NAME_MAP
+
         if self.KMEANS_MODEL is None:
             raise RuntimeError("카테고리 추천 모델 로드 실패")
+
         
-    def _load_models(self) :
-        try :
-            with open(os.path.join(PKL_DIR, 'kmeans_model.pkl'), 'rb') as f :
-                kmeans = pickle.load(f)
-            with open(os.path.join(PKL_DIR, 'scaler_model.pkl'), 'rb') as f :
-                scaler = pickle.load(f)
-            with open(os.path.join(PKL_DIR, 'cluster_name_map.pkl'), 'rb') as f :
-                cluster_map = pickle.load(f)
-            print("모델 로드 완료 ✅")
-            return kmeans, scaler, cluster_map
-        except Exception as e :
-            print("모델 로드 오류:", e)
-            return None, None, None
+    # def _load_models(self) :
+    #     try :
+    #         with open(os.path.join(PKL_DIR, 'kmeans_model.pkl'), 'rb') as f :
+    #             kmeans = pickle.load(f)
+    #         with open(os.path.join(PKL_DIR, 'scaler_model.pkl'), 'rb') as f :
+    #             scaler = pickle.load(f)
+    #         with open(os.path.join(PKL_DIR, 'cluster_name_map.pkl'), 'rb') as f :
+    #             cluster_map = pickle.load(f)
+    #         print("모델 로드 완료 ✅")
+    #         return kmeans, scaler, cluster_map
+    #     except Exception as e :
+    #         print("모델 로드 오류:", e)
+    #         return None, None, None
 
 
     def recommend_food(self, features: dict) -> dict:
