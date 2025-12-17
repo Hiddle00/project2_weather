@@ -17,3 +17,6 @@ class CategoryRecommendService :
         except Exception as e :
             print(e)
             return {"error" : str(e)}
+
+
+    # 클러스터id와 카테고리id 매핑
