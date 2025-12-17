@@ -16,3 +16,7 @@ df_review = pd.read_csv(CSV_DIR / "reviews_repredicted.csv")
 
 D:\Work\ezen\project2_weather\project2> 에서 python -m app_ezenfood.app 실행 
  
+
+ 라이브러리 한번에 설치하기
+ pip install -r app_ezenfood/requirements.txt
+ 
