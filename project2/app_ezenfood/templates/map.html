@@ -9,7 +9,7 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-        <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_key }}&libraries=services"></script>
+        <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey={{ kakao_key }}&libraries=services,"></script>
     </head>
     <body>
         <div class="layout">
@@ -300,9 +300,8 @@ function geocodeAddress(address) {
 /*************************************************
  * 검색 관련
  *************************************************/
-async function search() {
+async function search(lat, lon) {
     const query = document.getElementById("query").value.trim();
-
     if (!query) {
         alert("검색어를 입력하세요.");
         return;
@@ -317,12 +316,9 @@ async function search() {
             return;
         }
 
-        /* ===============================
-        1️⃣ 음식 카테고리 카드(foodListCard)
-        =============================== */
         const foodUl = document.getElementById("foodListCard");
         foodUl.innerHTML = "";
-        recommendations = []; // 기존 추천 덮어쓰기
+        recommendations = [];
 
         data.subs.forEach(sub => {
             const food = sub.sub_name;
@@ -331,34 +327,38 @@ async function search() {
             const li = document.createElement("li");
             li.textContent = food;
 
-            // 카테고리 클릭 → 해당 음식점 표시
-            li.onclick = () => {
-                const list = data.rests[food] || [];
-                renderRestaurants(list);
-            };
+            // 수정: 클릭 이벤트에서 검색 위치 좌표 넘김
+            li.onclick = () => searchRestaurants(food, lat, lon);
 
             foodUl.appendChild(li);
         });
 
         document.getElementById("foodCard").style.display = "block";
 
-        /* ===============================
-        2️⃣ 첫 번째 카테고리 음식점 자동 표시
-        =============================== */
+        // 수정: 첫 번째 카테고리도 검색 위치 기준
         if (data.subs.length > 0) {
             const firstFood = data.subs[0].sub_name;
-            const subId = getSubIdFromName(firstFood);
-
-            if (subId !== null) {
-                const list = await fetchRestaurantsCached(subId, pos.lat, pos.lon);
-                renderRestaurants(list);
-            }
+            await searchRestaurants(firstFood, lat, lon);
         }
 
     } catch (err) {
         console.error(err);
         alert("검색 중 오류가 발생했습니다.");
     }
+}
+
+// ==============================
+// searchRestaurants 함수 수정
+// 좌표 매개변수 추가
+// ==============================
+async function searchRestaurants(food, lat, lon) {
+    const subId = getSubIdFromName(food);
+    if (subId === null) return;
+
+    // 좌표 없으면 지도 중심 기준
+    const center = (lat && lon) ? { lat, lon } : map.getCenter();
+    const list = await fetchRestaurantsCached(subId, center.lat, center.lon);
+    renderRestaurants(list, center.lat, center.lon); // 거리 계산 기준
 }
 
 // 카테고리 선택에 따라서 작동하는 함수 변경
@@ -372,14 +372,17 @@ async function handleSearch() {
     }
 
     if (type === "addr") {
-        try {
-            const pos = await geocodeAddress(query);
-            await mainFlow(pos);
-        } catch {
-            alert("주소를 찾을 수 없습니다.");
-        }
-        return;
+    try {
+        const pos = await geocodeAddress(query);
+        await mainFlow(pos); // 지도 이동 + 날씨 + 추천 카테고리
+
+        // 수정: search 호출 시 검색 위치 좌표 전달
+        search(pos.lat, pos.lon);
+    } catch {
+        alert("주소를 찾을 수 없습니다.");
     }
+    return;
+}
 
     if (type === "category") {
         search();
@@ -525,52 +528,68 @@ async function searchRestaurants(food) {
     renderRestaurants(list);
 }
 
-// 가게 목록 표시 함수
+// 위도·경도 간 거리 계산 (미터 단위)
+function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
+    const R = 6371; // 지구 반지름 (km)
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c * 1000; // km → m
+}
+
 function renderRestaurants(list) {
     clearMarkers();
     const ul = document.getElementById("restaurantList");
     ul.innerHTML = "";
 
+    // 현재 지도 중심 좌표 (사용자 위치)
+    const center = map.getCenter();
+    const userLat = center.getLat();
+    const userLon = center.getLng();
+
     list.forEach((r, idx) => {
-    const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
+        const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
 
-    const marker = new kakao.maps.Marker({ position: pos, map });
-    markers[idx] = marker;
+        // 거리 계산 (미터)
+        const distance = getDistanceFromLatLonInM(userLat, userLon, r.rest_y, r.rest_x);
 
-    const content = `<div style="padding:5px;font-size:12px;">
-                        <b>${r.rest_name}</b><br>
-                        행정동명: ${r.rest_dong ?? "-"}<br>
-                        지번: ${r.rest_old ?? "-"}<br>
-                        도로명: ${r.rest_addr ?? "-"}<br>
-                        리뷰 수: ${r.review_count ?? "-"}<br>
-                        <br>
-                     </div>`;
-    const infowindow = new kakao.maps.InfoWindow({ content });
+        const marker = new kakao.maps.Marker({ position: pos, map });
+        markers[idx] = marker;
 
-    // 마커에 마우스 올리면 InfoWindow 열기
-    kakao.maps.event.addListener(marker, 'mouseover', function() {
-        infowindow.open(map, marker);
+        const content = `<div style="padding:5px;font-size:12px;">
+                            <b>${r.rest_name}</b><br>
+                            행정동명: ${r.rest_dong ?? "-"}<br>
+                            지번: ${r.rest_old ?? "-"}<br>
+                            도로명: ${r.rest_addr ?? "-"}<br>
+                            리뷰 수: ${r.review_count ?? "-"}<br>
+                            거리: ${distance.toFixed(0)} m
+                         </div>`;
+        const infowindow = new kakao.maps.InfoWindow({ content });
+
+        kakao.maps.event.addListener(marker, 'mouseover', function() {
+            infowindow.open(map, marker);
+        });
+
+        kakao.maps.event.addListener(marker, 'mouseout', function() {
+            infowindow.close();
+        });
+
+        const li = document.createElement("li");
+        li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰) - ${distance.toFixed(0)} m`;
+        li.onclick = () => {
+            map.setCenter(pos);
+            map.setLevel(3);
+        };
+        ul.appendChild(li);
     });
-
-    // 마커에서 마우스 떼면 InfoWindow 닫기
-    kakao.maps.event.addListener(marker, 'mouseout', function() {
-        infowindow.close();
-    });
-
-    const li = document.createElement("li");
-    li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰)`;
-    li.onclick = () => {
-        map.setCenter(pos);
-        map.setLevel(3);
-    };
-    document.getElementById("restaurantList").appendChild(li);
-});
-
-
-
 
     document.getElementById("listCard").style.display = "block";
 }
+
 
 /*************************************************
  * 메인 플로우
