@@ -54,7 +54,7 @@ class MapService:
         nx, ny = coords["x"], coords["y"]
 
         now = datetime.now()
-        if now.minute < 40:
+        if now.minute < 45:
             now -= timedelta(hours=1)
         base_date_str = now.strftime("%Y%m%d")
         base_time = now.strftime("%H") + "00"
