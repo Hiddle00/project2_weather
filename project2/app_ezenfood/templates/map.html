@@ -416,6 +416,7 @@ function moveMap(lat, lon, level = 4) {
     setUserMarker(lat, lon);
 }
 
+
 /*************************************************
  * 날씨 (백엔드 호출)
  *************************************************/
@@ -542,6 +543,7 @@ function renderRestaurants(list) {
                         지번: ${r.rest_old ?? "-"}<br>
                         도로명: ${r.rest_addr ?? "-"}<br>
                         리뷰 수: ${r.review_count ?? "-"}<br>
+                        <br>
                      </div>`;
     const infowindow = new kakao.maps.InfoWindow({ content });
 
@@ -611,18 +613,130 @@ window.addEventListener("DOMContentLoaded", () => {
         const pos = await getUserLocation();
         await mainFlow(pos);
 
+        // loadAll() 함수 있었을때 남아있던걸로 예정됨
+        /**********
         document.getElementById("searchButton").onclick = async () => {
             const q = document.getElementById("locationInput").value.trim();
             const p = q ? await geocodeAddress(q) : await getUserLocation();
             await mainFlow(p);
         };
-
+        ***********/
         document.getElementById("geoBtn").onclick = async () => {
             const p = await getUserLocation();
             await mainFlow(p);
         };
     });
 });
+
+function geoBtnManager() {
+    // 로컬 변수로 현재 위치 저장
+    let currentLat = 35.8242; // 전주시청 위도
+    let currentLon = 127.148; // 전주시청 경도
+
+    // GPS 위치 가져오기 시도
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                currentLat = position.coords.latitude;
+                currentLon = position.coords.longitude;
+                console.log("GPS 위치 가져옴:", currentLat, currentLon);
+                // 지도 이동
+                map.setView([currentLat, currentLon], 15);
+            },
+            (error) => {
+                console.warn("GPS 위치 가져오기 실패, 기본값 사용:", error.message);
+                map.setView([currentLat, currentLon], 15);
+            }
+        );
+    } else {
+        console.warn("브라우저가 geolocation 지원 안함, 기본값 사용");
+        map.setView([currentLat, currentLon], 15);
+    }
+
+    // 버튼 클릭 이벤트
+    document.getElementById("geoBtn").addEventListener("click", () => {
+        // 클로저로 로컬 변수 참조
+        console.log("버튼 클릭, 저장된 위치로 이동:", currentLat, currentLon);
+        map.setView([currentLat, currentLon], 15);
+    });
+}
+
+// 페이지 로드 시 호출
+geoBtnManager();
+
+
+function showMyLocation() {
+    // 기본값: 전주시청
+    let currentLat = 35.8242;
+    let currentLon = 127.148;
+
+    // 지도 객체 생성 (이미 생성되어 있으면 생략)
+    // var map = new kakao.maps.Map(container, options);
+
+    // GPS 시도
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                currentLat = position.coords.latitude;
+                currentLon = position.coords.longitude;
+                console.log("GPS 위치 가져옴:", currentLat, currentLon);
+
+                let locPosition = new kakao.maps.LatLng(currentLat, currentLon);
+
+                // 지도 중심 이동
+                map.setCenter(locPosition);
+
+                // 마커 생성
+                let marker = new kakao.maps.Marker({
+                    position: locPosition
+                });
+
+                marker.setMap(map);
+
+                // 마커에 인포윈도우 추가
+                let infowindow = new kakao.maps.InfoWindow({
+                    content: '<div style="padding:5px;">내 위치</div>'
+                });
+                infowindow.open(map, marker);
+            },
+            (error) => {
+                console.warn("GPS 위치 가져오기 실패, 기본값 사용:", error.message);
+
+                let locPosition = new kakao.maps.LatLng(currentLat, currentLon);
+                map.setCenter(locPosition);
+
+                let marker = new kakao.maps.Marker({
+                    position: locPosition
+                });
+                marker.setMap(map);
+
+                let infowindow = new kakao.maps.InfoWindow({
+                    content: '<div style="padding:5px;">기본 위치</div>'
+                });
+                infowindow.open(map, marker);
+            }
+        );
+    } else {
+        console.warn("브라우저가 geolocation 지원 안함, 기본값 사용");
+
+        let locPosition = new kakao.maps.LatLng(currentLat, currentLon);
+        map.setCenter(locPosition);
+
+        let marker = new kakao.maps.Marker({
+            position: locPosition
+        });
+        marker.setMap(map);
+
+        let infowindow = new kakao.maps.InfoWindow({
+            content: '<div style="padding:5px;">기본 위치</div>'
+        });
+        infowindow.open(map, marker);
+    }
+}
+
+// 페이지 로드 시 호출
+showMyLocation();
+
 </script>
 
 

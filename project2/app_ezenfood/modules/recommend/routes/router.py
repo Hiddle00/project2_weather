@@ -75,7 +75,7 @@ def recommend_restaurants() :
             "error": "sub_id, lat, lon은 필수이며 숫자여야 합니다."
         }), 400
 
-    max_distance_km = float(request.args.get("distance", 1.0))
+    max_distance_km = float(request.args.get("distance", 1.5))
     top_n           = int(request.args.get("top_n", 5))
 
     try :

@@ -2,9 +2,12 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, classification_report
+from sklearn import metrics
+#from sklearn.metrics import accuracy_score, f1_score, classification_report
 from tqdm import tqdm
 import pickle
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # 1. 데이터 로드
 tqdm.pandas()
@@ -46,9 +49,37 @@ lr.fit(X_train_tfidf, y_train)
 # 5. 예측&평가
 y_pred = lr.predict(X_test_tfidf)
 
-print("Accuracy :", accuracy_score(y_test, y_pred))
-print("F1 Score :", f1_score(y_test, y_pred))
-print("\nClassification Report:\n", classification_report(y_test, y_pred))
+print("Accuracy :", metrics.accuracy_score(y_test, y_pred))
+print("F1 Score :", metrics.f1_score(y_test, y_pred))
+print("\nClassification Report:\n", metrics.classification_report(y_test, y_pred))
+print("Confusion matrix:\n{}".format(metrics.confusion_matrix(y_test, y_pred)))
+
+# 모델의 계수(coefficients) 가져오기
+coef = lr.coef_[0]
+features = tfidf.get_feature_names_out()
+
+# 데이터프레임 변환 후 상위/하위 단어 추출
+df_coef = pd.DataFrame({'word': features, 'coefficient': coef})
+
+# 제외하고 싶은 단어 리스트
+exclude_words = ['김밥', '하다', '그렇다', '자다']
+
+# 해당 단어들을 제외하고 데이터프레임 필터링
+df_filtered = df_coef[~df_coef['word'].isin(exclude_words)]
+
+# 필터링된 데이터로 상위 긍정/부정 단어 추출
+top_positive = df_filtered.sort_values(by='coefficient', ascending=False).head(10)
+top_negative = df_filtered.sort_values(by='coefficient', ascending=True).head(10)
+
+# 폰트 설정
+plt.rcParams['font.family'] = 'Malgun Gothic'
+plt.rcParams['axes.unicode_minus'] = False
+
+# 시각화
+plt.figure(figsize=(10, 6))
+sns.barplot(data=pd.concat([top_positive, top_negative]), x='coefficient', y='word')
+plt.title("Top Positive & Negative Words (LR Coefficients)")
+plt.show()
 
 # 6. 리뷰 예측 함수 (확률 반환)
 def pred_sentiment(text):
