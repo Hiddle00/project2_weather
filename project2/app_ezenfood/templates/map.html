@@ -214,10 +214,6 @@ function renderFloatingPanel() {
     });
 }
 
-
-
-
-
 function openPanel() {
     document.getElementById("floatingPanel").style.display = "block";
 }
@@ -226,155 +222,151 @@ function closePanel() {
     document.getElementById("floatingPanel").style.display = "none";
 }
 
-            /*************************************************
-            * Kakao Map 초기화
-            *************************************************/
-            // lat, lon 값없으면 기본값: 전주시청 적용 level= 확대,축소
-            function initKakaoMap(lat = 35.8242, lon = 127.1480, level = 4) {
-                // container변수 아이디 속성 map 위치 저장 
-                const container = document.getElementById("map");
-                // 카카오맵 객체 생성 기본 중심값 적용
-                map = new kakao.maps.Map(container, {
-                    center: new kakao.maps.LatLng(lat, lon),
-                    level
-                });
-                // geocoder 안에 카카오맵 서비스 주소 저장
-                geocoder = new kakao.maps.services.Geocoder();
+/*************************************************
+ * Kakao Map 초기화
+ *************************************************/
+// lat, lon 값없으면 기본값: 전주시청 적용 level= 확대,축소
+function initKakaoMap(lat = 35.8242, lon = 127.1480, level = 4) {
+    // container변수 아이디 속성 map 위치 저장 
+    const container = document.getElementById("map");
+    // 카카오맵 객체 생성 기본 중심값 적용
+    map = new kakao.maps.Map(container, {
+        center: new kakao.maps.LatLng(lat, lon),
+        level
+    });
+    // geocoder 안에 카카오맵 서비스 주소 저장
+    geocoder = new kakao.maps.services.Geocoder();
+}
+
+/*************************************************
+ * 위치 관련
+ *************************************************/
+function getUserLocation() {
+    return new Promise(resolve => {
+        // GPS기능 작동 안하면 전주시청 좌표 반환
+        if (!navigator.geolocation) {
+            resolve({ lat: 35.8242, lon: 127.1480 });
+            return;
+        }
+        // getUserLocation GPS기능 실행
+        navigator.geolocation.getCurrentPosition(
+            // 성공하면 사용자 위치 위도 경도 반환
+            pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+            // 실패하면 전주시청 위도 경도 반환
+            () => resolve({ lat: 35.8242, lon: 127.1480 })
+        );
+    });
+}
+
+/*************************************************
+ * 검색창에 입력한 글자(주소)를 → 지도에서 쓸 좌표로 바꿔줌
+ **************************************************/
+function geocodeAddress(address) {
+    return new Promise((resolve, reject) => {
+        geocoder.addressSearch(address, (result, status) => {
+            if (status === kakao.maps.services.Status.OK) {
+                resolve({ lat: parseFloat(result[0].y), lon: parseFloat(result[0].x) });
+            } else {
+                reject("주소 검색 실패");
             }
+        });
+    });
+}
 
-            /*************************************************
-            * 위치 관련
-            *************************************************/
-            function getUserLocation() {
+/*************************************************
+ * 검색 관련
+ *************************************************/
+async function search() {
+    const query = document.getElementById("query").value.trim();
 
-                const type = document.getElementById("searchType")?.value;
-                if (type !== "addr") return Promise.reject("not addr search");
-                
-                return new Promise(resolve => {
-                    // GPS기능 작동 안하면 전주시청 좌표 반환
-                    if (!navigator.geolocation) {
-                        resolve({ lat: 35.8242, lon: 127.1480 });
-                        return;
-                    }
-                    // getUserLocation GPS기능 실행
-                    navigator.geolocation.getCurrentPosition(
-                        // 성공하면 사용자 위치 위도 경도 반환
-                        pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-                        // 실패하면 전주시청 위도 경도 반환
-                        () => resolve({ lat: 35.8242, lon: 127.1480 })
-                    );
-                });
+    if (!query) {
+        alert("검색어를 입력하세요.");
+        return;
+    }
+
+    try {
+        const res  = await fetch(`/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        /* ===============================
+        1️⃣ 음식 카테고리 카드(foodListCard)
+        =============================== */
+        const foodUl = document.getElementById("foodListCard");
+        foodUl.innerHTML = "";
+        recommendations = []; // 기존 추천 덮어쓰기
+
+        data.subs.forEach(sub => {
+            const food = sub.sub_name;
+            recommendations.push(food);
+
+            const li = document.createElement("li");
+            li.textContent = food;
+
+            // 카테고리 클릭 → 해당 음식점 표시
+            li.onclick = () => {
+                const list = data.rests[food] || [];
+                renderRestaurants(list);
+            };
+
+            foodUl.appendChild(li);
+        });
+
+        document.getElementById("foodCard").style.display = "block";
+
+        /* ===============================
+        2️⃣ 첫 번째 카테고리 음식점 자동 표시
+        =============================== */
+        if (data.subs.length > 0) {
+            const firstFood = data.subs[0].sub_name;
+            const subId = getSubIdFromName(firstFood);
+
+            if (subId !== null) {
+                const list = await fetchRestaurantsCached(subId, pos.lat, pos.lon);
+                renderRestaurants(list);
             }
-            /*************************************************
-            * 검색창에 입력한 글자(주소)를 → 지도에서 쓸 좌표로 바꿔줌
-            **************************************************/
-            // address : 사용자가 검색창에 입력한 문자열
-            function geocodeAddress(address) {
-                return new Promise((resolve, reject) => {
-                    //카카오 지도 서버에 address 문자열을 보내서 좌표로 바꿔달라고 요청
-                    geocoder.addressSearch(address, (result, status) => {
-                        if (status === kakao.maps.services.Status.OK) {
-                            // 주소의 위도 경도를 실수로 반환
-                            resolve({ lat: parseFloat(result[0].y), lon: parseFloat(result[0].x) });
-                        } else {
-                            reject("주소 검색 실패");
-                        }
-                    });
-                });
-            }
+        }
 
-            /*************************************************
-            * 검색 관련  재욱 작성 함 
-            *************************************************/
-            async function search() {
-                const query = document.getElementById("query").value.trim();
+    } catch (err) {
+        console.error(err);
+        alert("검색 중 오류가 발생했습니다.");
+    }
+}
 
-                if (!query) {
-                    alert("검색어를 입력하세요.");
-                    return;
-                }
+// 카테고리 선택에 따라서 작동하는 함수 변경
+async function handleSearch() {
+    const type  = document.getElementById("searchType").value;
+    const query = document.getElementById("query").value.trim();
 
-                try {
-                    const res  = await fetch(`/search?q=${encodeURIComponent(query)}`);
-                    const data = await res.json();
+    if (!query) {
+        alert("검색어를 입력하세요.");
+        return;
+    }
 
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
+    if (type === "addr") {
+        try {
+            const pos = await geocodeAddress(query);
+            await mainFlow(pos);
+        } catch {
+            alert("주소를 찾을 수 없습니다.");
+        }
+        return;
+    }
 
-                    /* ===============================
-                    1️⃣ 음식 카테고리 카드(foodListCard)
-                    =============================== */
-                    const foodUl = document.getElementById("foodListCard");
-                    foodUl.innerHTML = "";
-                    recommendations = []; // 기존 추천 덮어쓰기
+    if (type === "category") {
+        search();
+        return;
+    }
 
-                    data.subs.forEach(sub => {
-                        const food = sub.sub_name;
-                        recommendations.push(food);
-
-                        const li = document.createElement("li");
-                        li.textContent = food;
-
-                        // 카테고리 클릭 → 해당 음식점 표시
-                        li.onclick = () => {
-                            const list = data.rests[food] || [];
-                            renderRestaurants(list);
-                        };
-
-                        foodUl.appendChild(li);
-                    });
-
-                    document.getElementById("foodCard").style.display = "block";
-
-                    /* ===============================
-                    2️⃣ 첫 번째 카테고리 음식점 자동 표시
-                    =============================== */
-                    if (data.subs.length > 0) {
-                        const firstFood = data.subs[0].sub_name;
-                        renderRestaurants(data.rests[firstFood] || []);
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    alert("검색 중 오류가 발생했습니다.");
-                }
-            }
-            // 카테고리 선택에 따라서 작동하는 함수 변경
-            async function handleSearch() {
-                const type  = document.getElementById("searchType").value;
-                const query = document.getElementById("query").value.trim();
-
-                if (!query) {
-                    alert("검색어를 입력하세요.");
-                    return;
-                }
-
-                if (type === "addr") {
-                    // 주소 검색
-                    try {
-                        const pos = await geocodeAddress(query);
-                        await mainFlow(pos);
-                    } catch {
-                        alert("주소를 찾을 수 없습니다.");
-                    }
-                    return;
-                }
-
-                if (type === "category") {
-                    // 카테고리 검색
-                    search();  // 기존 search() 그대로 사용
-                    return;
-                }
-                // 아직 미구현
-                if (type === "rest") {
-                    // 음식점 이름 검색
-                    await searchRest(query);
-                    return;
-                }
-            }
-
+    if (type === "rest") {
+        await searchRestaurants(query);
+        return;
+    }
+}
 
 /*************************************************
  * 지도 관련
@@ -384,84 +376,84 @@ function clearMarkers() {
     markers = {};
 }
 
-            function setUserMarker(lat, lon) {
-                const pos = new kakao.maps.LatLng(lat, lon);
-                if (!userMarker) {
-                    userMarker = new kakao.maps.Marker({ position: pos, map });
-                } else {
-                    userMarker.setPosition(pos);
-                }
-            }
+function setUserMarker(lat, lon) {
+    const pos = new kakao.maps.LatLng(lat, lon);
+    if (!userMarker) {
+        userMarker = new kakao.maps.Marker({ position: pos, map });
+    } else {
+        userMarker.setPosition(pos);
+    }
+}
 
-            function moveMap(lat, lon, level = 4) {
-                const pos = new kakao.maps.LatLng(lat, lon);
-                map.setCenter(pos);
-                map.setLevel(level);
-                setUserMarker(lat, lon);
-            }
+function moveMap(lat, lon, level = 4) {
+    const pos = new kakao.maps.LatLng(lat, lon);
+    map.setCenter(pos);
+    map.setLevel(level);
+    setUserMarker(lat, lon);
+}
 
-            /*************************************************
-            * 날씨 (백엔드 호출)
-            *************************************************/
-            async function loadWeather(lat, lon) {
-                try {
-                    const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
-                    return await res.json();
-                } catch {
-                    return { temp: "-", rain: 0, humidity: 0, pty: 0, sky: 1, cloud: 0 };
-                }
-            }
-            // 날씨 화면 표시 함수
-            function renderWeatherUI(w) {
-                document.getElementById("temp").textContent = w.temp;
-                document.getElementById("rain").textContent = w.rain;
-                document.getElementById("humidity").textContent = w.humidity;
-                document.getElementById("cloud").textContent = w.cloud ?? "-";
-                document.getElementById("weatherCard").style.display = "block";
-            }
+/*************************************************
+ * 날씨 (백엔드 호출)
+ *************************************************/
+async function loadWeather(lat, lon) {
+    try {
+        const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+        return await res.json();
+    } catch {
+        return { temp: "-", rain: 0, humidity: 0, pty: 0, sky: 1, cloud: 0 };
+    }
+}
 
-            /*************************************************
-            * 백엔드 추천 (사이드 카드)
-            *************************************************/
-            function getSeason() {
-                const m = new Date().getMonth() + 1;
-                if (m <= 2) return 4;
-                if (m <= 5) return 1;
-                if (m <= 8) return 2;
-                return 3;
-            }
-            // 날씨 - 카테고리
-            // 확인필요
-            async function getRecommendations(lat, lon) {
-                const url = `/api/recommend/categories?lat=${lat}&lon=${lon}`;
-                try {
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    recommendations = (data.recommendations || []).slice(0, 3);
-                    renderSideCard();
-                } catch {
-                    recommendations = [];
-                    renderSideCard();
-                }
-            }
+// 날씨 화면 표시 함수
+function renderWeatherUI(w) {
+    document.getElementById("temp").textContent = w.temp;
+    document.getElementById("rain").textContent = w.rain;
+    document.getElementById("humidity").textContent = w.humidity;
+    document.getElementById("cloud").textContent = w.sky;  // JSON에서 넘어온 값 그대로 사용
+    document.getElementById("weatherCard").style.display = "block";
+}
 
-            /*************************************************
-            * 사이드 카드 (백엔드 추천) 받으면 카테고리(음식) 목록 표시
-            *************************************************/
-            function renderSideCard() {
-                const ul = document.getElementById("foodListCard");
-                ul.innerHTML = "";
 
-                recommendations.forEach(food => {
-                    const li = document.createElement("li");
-                    li.textContent = food;
-                    li.onclick = () => searchRestaurants(food);
-                    ul.appendChild(li);
-                });
+/*************************************************
+ * 백엔드 추천 (사이드 카드)
+ *************************************************/
+function getSeason() {
+    const m = new Date().getMonth() + 1;
+    if (m <= 2) return 4;
+    if (m <= 5) return 1;
+    if (m <= 8) return 2;
+    return 3;
+}
+
+async function getRecommendations(lat, lon) {
+    const url = `/api/recommend/categories?lat=${lat}&lon=${lon}`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        recommendations = (data.recommendations || []).slice(0, 3);
+        renderSideCard();
+    } catch {
+        recommendations = [];
+        renderSideCard();
+    }
+}
+
+/*************************************************
+ * 사이드 카드 (백엔드 추천) 받으면 카테고리(음식) 목록 표시
+ *************************************************/
+function renderSideCard() {
+    const ul = document.getElementById("foodListCard");
+    ul.innerHTML = "";
+
+    recommendations.forEach(food => {
+        const li = document.createElement("li");
+        li.textContent = food;
+        li.onclick = () => searchRestaurants(food);
+        ul.appendChild(li);
+    });
 
     document.getElementById("foodCard").style.display = "block";
 }
-
 
 // ----------------------------
 // 음식점 호출 (캐시 적용)
@@ -480,18 +472,35 @@ async function fetchRestaurantsCached(sub_id, lat, lon) {
     }
 }
 
-            // 수정필요 검색용 함수
-            async function searchRestaurants(food) {
-                const center = map.getCenter();
-                const list = await fetchRestaurants(food, center.getLat(), center.getLng());
-                renderRestaurants(list);
-            }
+/*************************************************
+ * 문자열 → sub_id 변환
+ *************************************************/
+function getSubIdFromName(name) {
+    for (const [id, n] of Object.entries(cluster_name_map)) {
+        if (n === name) return Number(id);
+    }
+    return null;
+}
 
-            // 가게 목록 표시 함수
-            function renderRestaurants(list) {
-                clearMarkers();
-                const ul = document.getElementById("restaurantList");
-                ul.innerHTML = "";
+// 검색용 함수 수정
+async function searchRestaurants(food) {
+    const center = map.getCenter();
+    const subId = getSubIdFromName(food);
+    if (subId === null) return;
+
+    const list = await fetchRestaurantsCached(
+        subId,
+        center.getLat(),
+        center.getLng()
+    );
+    renderRestaurants(list);
+}
+
+// 가게 목록 표시 함수
+function renderRestaurants(list) {
+    clearMarkers();
+    const ul = document.getElementById("restaurantList");
+    ul.innerHTML = "";
 
     list.forEach((r, idx) => {
         const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
@@ -525,17 +534,12 @@ async function fetchRestaurantsCached(sub_id, lat, lon) {
         ul.appendChild(li);
     });
 
-                document.getElementById("listCard").style.display = "block";
-            }
-
-
-
+    document.getElementById("listCard").style.display = "block";
+}
 
 /*************************************************
  * 메인 플로우
  *************************************************/
- // 확인필요
-// mainFlow 수정
 async function mainFlow(pos) {
     moveMap(pos.lat, pos.lon);
 
@@ -550,46 +554,44 @@ async function mainFlow(pos) {
 
         // 첫 번째 추천 카테고리 음식점
         if (recommendations.length > 0) {
-            const firstCat = recommendations[0]; // {id, name}
-            const list = await fetchRestaurantsCached(firstCat.id, pos.lat, pos.lon);
-            renderRestaurants(list);
+            const firstFood = recommendations[0]; // 문자열
+            const subId = getSubIdFromName(firstFood);
+
+            if (subId !== null) {
+                const list = await fetchRestaurantsCached(subId, pos.lat, pos.lon);
+                renderRestaurants(list);
+            }
         }
     } catch (err) {
         console.error("메인 플로우 처리 중 오류", err);
     }
 }
 
+/*************************************************
+ * 이벤트 바인딩
+ *************************************************/
+window.addEventListener("DOMContentLoaded", () => {
+    kakao.maps.load(async () => {
+        initKakaoMap();
+        renderFloatingPanel();
 
+        const pos = await getUserLocation();
+        await mainFlow(pos);
 
+        document.getElementById("searchButton").onclick = async () => {
+            const q = document.getElementById("locationInput").value.trim();
+            const p = q ? await geocodeAddress(q) : await getUserLocation();
+            await mainFlow(p);
+        };
 
+        document.getElementById("geoBtn").onclick = async () => {
+            const p = await getUserLocation();
+            await mainFlow(p);
+        };
+    });
+});
+</script>
 
-
-
-            /*************************************************
-            * 이벤트 바인딩
-            *************************************************/
-            window.addEventListener("DOMContentLoaded", () => {
-                kakao.maps.load(async () => {
-                    initKakaoMap();
-                    renderFloatingPanel();
-
-                    const pos = await getUserLocation();
-                    await mainFlow(pos);
-
-                    document.getElementById("searchButton").onclick = async () => {
-                        const q = document.getElementById("locationInput").value.trim();
-                        const p = q ? await geocodeAddress(q) : await getUserLocation();
-                        await mainFlow(p);
-                    };
-
-                    document.getElementById("geoBtn").onclick = async () => {
-                        const p = await getUserLocation();
-                        await mainFlow(p);
-                    };
-                });
-            });
-
-        </script>
 
     </body>
 </html>
