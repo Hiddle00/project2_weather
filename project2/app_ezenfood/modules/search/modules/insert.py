@@ -1,4 +1,4 @@
-#from app_ezenfood.modules.search.service import SubEmbbeding
+from app_ezenfood.modules.search.service import SubEmbedding
 from app_ezenfood.modules.search.dao.rest_dao import RestDAO
 from app_ezenfood.modules.utils.get_conn import get_conn
 import pandas as pd
@@ -89,8 +89,8 @@ categories = [
             ]
 
 # 카테고리 insert
-#svc = SubEmbbeding()
-#svc.sub_insert(categories)
+svc = SubEmbedding()
+svc.sub_insert(categories)
 
 # CSV 읽기 - 음식점 insert
 df_rest    = pd.read_csv(CSV_DIR / "filter_list.csv")
@@ -117,6 +117,6 @@ print(df_rest.info())
 
 dao = RestDAO(get_conn)
 
-# dao.insert(df_rest)
+dao.insert(df_rest)
 
 
