@@ -24,10 +24,12 @@ class RecommendDAO:
                 where 1=1
                 and r.sub_id=%s
             """
+            
             # and r.rest_display  = 'Y'
             cursor.execute(query, (sub_id,))
             rows = cursor.fetchall()
             df = pd.DataFrame(rows)
+            print(df)
             return df #pd.read_sql(query, conn, params=[sub_id])
         finally :
             conn.close()
