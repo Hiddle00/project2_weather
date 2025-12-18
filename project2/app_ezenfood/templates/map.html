@@ -184,12 +184,36 @@ const cluster_name_map = {
     19: '돼지고기'
 };
 
+const clusterIdToSubId = {
+    0 : 18,
+    1 : 10,
+    2 : 6,
+    3 : 4,
+    4 : 5,
+    5 : 2,
+    6 : 14,
+    7 : 15,
+    8 : 13,
+    9 : 12,
+    10 : 7,
+    11 : 9,
+    12 : 19,
+    13 : 1, 
+    14 : 11,
+    15 : 21,
+    16 : 20,
+    17 : 16,
+    18 : 17,
+    19 : 8
+}
+
 function renderFloatingPanel() {
     const panel = document.getElementById("flotmenu");
     panel.innerHTML = "";
 
     // 음식 목록 생성
     Object.entries(cluster_name_map).forEach(([id, name]) => {
+        const subId = clusterIdToSubId[id]
         const div = document.createElement("div");
         div.textContent = name;
         div.className = "food-item";
@@ -201,7 +225,7 @@ function renderFloatingPanel() {
             const lon = pos.getLng();
 
             try {
-                const res = await fetch(`/api/recommend/restaurants?sub_id=${id}&lat=${lat}&lon=${lon}&top_n=10`);
+                const res = await fetch(`/api/recommend/restaurants?sub_id=${subId}&lat=${lat}&lon=${lon}&top_n=10`);
                 const data = await res.json();
                 renderRestaurants(data.restaurants || []);
             } catch (err) {
@@ -459,13 +483,17 @@ function renderSideCard() {
 // 음식점 호출 (캐시 적용)
 // ----------------------------
 async function fetchRestaurantsCached(sub_id, lat, lon) {
-    if (restaurantCache[sub_id]) return restaurantCache[sub_id];
+
+    const subId = clusterIdToSubId[sub_id]
+    if (restaurantCache[subId]) return restaurantCache[subId];
+
+    
 
     try {
-        const res = await fetch(`/api/recommend/restaurants?sub_id=${sub_id}&lat=${lat}&lon=${lon}&top_n=10`);
+        const res = await fetch(`/api/recommend/restaurants?sub_id=${subId}&lat=${lat}&lon=${lon}&top_n=10`);
         const data = await res.json();
-        restaurantCache[sub_id] = data.restaurants || [];
-        return restaurantCache[sub_id];
+        restaurantCache[subId] = data.restaurants || [];
+        return restaurantCache[subId];
     } catch (err) {
         console.error("추천 음식점 불러오기 실패", err);
         return [];
