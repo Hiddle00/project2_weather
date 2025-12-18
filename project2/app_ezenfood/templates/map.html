@@ -531,36 +531,41 @@ function renderRestaurants(list) {
     ul.innerHTML = "";
 
     list.forEach((r, idx) => {
-        const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
+    const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
 
-        const marker = new kakao.maps.Marker({ position: pos, map });
-        markers[idx] = marker;
+    const marker = new kakao.maps.Marker({ position: pos, map });
+    markers[idx] = marker;
 
-        const content = `<div style="padding:5px;font-size:12px;">
-                            <b>${r.rest_name}</b><br>
-                            행정동명: ${r.rest_dong ?? "-"}<br>
-                            지번: ${r.rest_old ?? "-"}<br>
-                            도로명: ${r.rest_addr ?? "-"}<br>
-                            리뷰: ${r.review_count ?? "-"}<br>
-                            개업: ${r.rest_old ?? "-"}년
-                         </div>`;
-        const infowindow = new kakao.maps.InfoWindow({ content });
+    const content = `<div style="padding:5px;font-size:12px;">
+                        <b>${r.rest_name}</b><br>
+                        행정동명: ${r.rest_dong ?? "-"}<br>
+                        지번: ${r.rest_old ?? "-"}<br>
+                        도로명: ${r.rest_addr ?? "-"}<br>
+                        리뷰 수: ${r.review_count ?? "-"}<br>
+                     </div>`;
+    const infowindow = new kakao.maps.InfoWindow({ content });
 
-        marker.addListener('click', () => {
-            map.setCenter(pos);
-            map.setLevel(3);
-            infowindow.open(map, marker);
-        });
-
-        const li = document.createElement("li");
-        li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰)`;
-        li.onclick = () => {
-            map.setCenter(pos);
-            map.setLevel(3);
-            infowindow.open(map, marker);
-        };
-        ul.appendChild(li);
+    // 마커에 마우스 올리면 InfoWindow 열기
+    kakao.maps.event.addListener(marker, 'mouseover', function() {
+        infowindow.open(map, marker);
     });
+
+    // 마커에서 마우스 떼면 InfoWindow 닫기
+    kakao.maps.event.addListener(marker, 'mouseout', function() {
+        infowindow.close();
+    });
+
+    const li = document.createElement("li");
+    li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰)`;
+    li.onclick = () => {
+        map.setCenter(pos);
+        map.setLevel(3);
+    };
+    document.getElementById("restaurantList").appendChild(li);
+});
+
+
+
 
     document.getElementById("listCard").style.display = "block";
 }
