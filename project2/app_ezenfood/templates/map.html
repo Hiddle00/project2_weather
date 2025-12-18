@@ -300,15 +300,22 @@ function geocodeAddress(address) {
 /*************************************************
  * 검색 관련
  *************************************************/
-async function search(lat, lon) {
+async function search(lat = null, lon = null) {
     const query = document.getElementById("query").value.trim();
     if (!query) {
         alert("검색어를 입력하세요.");
         return;
     }
 
+    // 좌표 없으면 현재 지도 중심 사용
+    if (!lat || !lon) {
+        const center = map.getCenter();
+        lat = center.getLat();
+        lon = center.getLng();
+    }
+
     try {
-        const res  = await fetch(`/search?q=${encodeURIComponent(query)}`);
+        const res  = await fetch(`/search/?q=${encodeURIComponent(query)}`);
         const data = await res.json();
 
         if (data.error) {
@@ -316,6 +323,7 @@ async function search(lat, lon) {
             return;
         }
 
+        /* 1️⃣ 음식 카테고리 카드 */
         const foodUl = document.getElementById("foodListCard");
         foodUl.innerHTML = "";
         recommendations = [];
@@ -327,39 +335,33 @@ async function search(lat, lon) {
             const li = document.createElement("li");
             li.textContent = food;
 
-            // 수정: 클릭 이벤트에서 검색 위치 좌표 넘김
-            li.onclick = () => searchRestaurants(food, lat, lon);
+            li.onclick = async () => {
+                const subId = getSubIdFromName(food);
+                if (subId === null) return;
+                const list = await fetchRestaurantsCached(subId, lat, lon);
+                renderRestaurants(list);
+            };
 
             foodUl.appendChild(li);
         });
 
         document.getElementById("foodCard").style.display = "block";
 
-        // 수정: 첫 번째 카테고리도 검색 위치 기준
-        if (data.subs.length > 0) {
-            const firstFood = data.subs[0].sub_name;
-            await searchRestaurants(firstFood, lat, lon);
+        /* 2️⃣ 첫 번째 카테고리 자동 표시 */
+        if (recommendations.length > 0) {
+            const subId = getSubIdFromName(recommendations[0]);
+            if (subId !== null) {
+                const list = await fetchRestaurantsCached(subId, lat, lon);
+                renderRestaurants(list);
+            }
         }
 
     } catch (err) {
         console.error(err);
-        alert("검색 중 오류가 발생했습니다.");
+        alert("검색 중 오류 발생");
     }
 }
 
-// ==============================
-// searchRestaurants 함수 수정
-// 좌표 매개변수 추가
-// ==============================
-async function searchRestaurants(food, lat, lon) {
-    const subId = getSubIdFromName(food);
-    if (subId === null) return;
-
-    // 좌표 없으면 지도 중심 기준
-    const center = (lat && lon) ? { lat, lon } : map.getCenter();
-    const list = await fetchRestaurantsCached(subId, center.lat, center.lon);
-    renderRestaurants(list, center.lat, center.lon); // 거리 계산 기준
-}
 
 // 카테고리 선택에 따라서 작동하는 함수 변경
 async function handleSearch() {
@@ -372,28 +374,26 @@ async function handleSearch() {
     }
 
     if (type === "addr") {
-    try {
-        const pos = await geocodeAddress(query);
-        await mainFlow(pos); // 지도 이동 + 날씨 + 추천 카테고리
-
-        // 수정: search 호출 시 검색 위치 좌표 전달
-        search(pos.lat, pos.lon);
-    } catch {
-        alert("주소를 찾을 수 없습니다.");
+        try {
+            const pos = await geocodeAddress(query);
+            await mainFlow(pos);
+            await search(pos.lat, pos.lon);
+        } catch {
+            alert("주소를 찾을 수 없습니다.");
+        }
+        return;
     }
-    return;
-}
 
     if (type === "category") {
-        search();
+        await search(); // 현재 지도 중심 기준
         return;
     }
 
     if (type === "rest") {
         await searchRestaurants(query);
-        return;
     }
 }
+
 
 /*************************************************
  * 지도 관련
@@ -486,15 +486,15 @@ function renderSideCard() {
 // ----------------------------
 // 음식점 호출 (캐시 적용)
 // ----------------------------
-async function fetchRestaurantsCached(sub_id, lat, lon) {
-
-    const subId = clusterIdToSubId[sub_id]
-    if (restaurantCache[subId]) return restaurantCache[subId];
-
-    
+async function fetchRestaurantsCached(subId, lat, lon) {
+    if (restaurantCache[subId]) {
+        return restaurantCache[subId];
+    }
 
     try {
-        const res = await fetch(`/api/recommend/restaurants?sub_id=${subId}&lat=${lat}&lon=${lon}&top_n=10`);
+        const res = await fetch(
+            `/api/recommend/restaurants?sub_id=${subId}&lat=${lat}&lon=${lon}&top_n=10`
+        );
         const data = await res.json();
         restaurantCache[subId] = data.restaurants || [];
         return restaurantCache[subId];
@@ -503,6 +503,7 @@ async function fetchRestaurantsCached(sub_id, lat, lon) {
         return [];
     }
 }
+
 
 /*************************************************
  * 문자열 → sub_id 변환
@@ -545,6 +546,19 @@ function renderRestaurants(list) {
     clearMarkers();
     const ul = document.getElementById("restaurantList");
     ul.innerHTML = "";
+
+    if (!list || list.length === 0) {
+            const li = document.createElement("li");
+            li.style.padding = "10px";
+            li.style.color = "#666";
+            li.style.fontSize = "14px";
+            li.style.textAlign = "center";
+            li.textContent = "📍 주변 1.5km 반경 내에 해당 음식점이 없습니다.";
+
+            ul.appendChild(li);
+            document.getElementById("listCard").style.display = "block";
+            return; // 🔴 여기서 종료
+        }
 
     // 현재 지도 중심 좌표 (사용자 위치)
     const center = map.getCenter();
