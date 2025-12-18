@@ -28,7 +28,11 @@
 
 음식점을 추천 할때 추천의 품질을 높이기 위해 리뷰 데이터를 긍/부정 라벨링하여 
 
+
 LR를 왜 사용했는지
+
+
+TF-IDF
 단어의 빈도(Term Frequency)와 희소성(Inverse Document Frequency)을 고려하여 단어에 가중치를 부여하는 방식
 
 
