@@ -2,7 +2,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, classification_report
+from sklearn import metrics
+#from sklearn.metrics import accuracy_score, f1_score, classification_report
 from tqdm import tqdm
 
 # 1. 데이터 로드
@@ -45,9 +46,10 @@ lr.fit(X_train_tfidf, y_train)
 # 5. 예측&평가
 y_pred = lr.predict(X_test_tfidf)
 
-print("Accuracy :", accuracy_score(y_test, y_pred))
-print("F1 Score :", f1_score(y_test, y_pred))
-print("\nClassification Report:\n", classification_report(y_test, y_pred))
+print("Accuracy :", metrics.accuracy_score(y_test, y_pred))
+print("F1 Score :", metrics.f1_score(y_test, y_pred))
+print("\nClassification Report:\n", metrics.classification_report(y_test, y_pred))
+print("Confusion matrix:\n{}".format(metrics.confusion_matrix(y_test, y_pred)))
 
 # 6. 리뷰 예측 함수 (확률 반환)
 def pred_sentiment(text):
@@ -70,7 +72,7 @@ df['pred_emotion'], df['emotion_prob'] = zip(
     )
 
 # 결과 저장
-df.to_csv('csv/reviews_repredicted.csv', index=False, encoding='utf-8-sig')
+#df.to_csv('csv/reviews_repredicted.csv', index=False, encoding='utf-8-sig')
 
 print(pred_sentiment("음식이 정말 맛있고 친절했어요"))
 print(pred_sentiment("짜고 서비스가 별로였습니다"))
