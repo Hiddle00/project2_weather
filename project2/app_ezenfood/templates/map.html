@@ -524,11 +524,23 @@ async function fetchRestaurantsCached(subId, lat, lon) {
  * 문자열 → sub_id 변환
  *************************************************/
 function getSubIdFromName(name) {
+    // Object.entries(cluster_name_map) 설명:
+    // cluster_name_map = { 0: '토스트·샌드위치', 1: '백반·한정식', ... }
+    // Object.entries(cluster_name_map) → 배열로 변환
+    // [ [0, '토스트·샌드위치'], [1, '백반·한정식'], ... ]
+    // 즉, 각 요소는 [key, value] 쌍임
     for (const [id, n] of Object.entries(cluster_name_map)) {
-        if (n === name) return Number(id);
+        // id = key (문자열 형태, 예: "19")
+        // n  = 음식 이름 (예: "돼지고기")
+
+
+        // 클릭한 이름과 동일한 cluster_name_map 값 찾음
+            // clusterIdToSubId[id]에서 실제 서버용 sub_id 반환
+        if (n === name) return clusterIdToSubId[id]; // 🔹 clusterIdToSubId에서 실제 sub_id 반환
     }
     return null;
 }
+
 
 // 검색용 함수 수정
 async function searchRestaurants(food) {
