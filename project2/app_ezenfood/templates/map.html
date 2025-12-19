@@ -569,55 +569,36 @@ function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
     return R * c * 1000; // km → m
 }
 
-function renderRestaurants(list) {
+function renderRestaurants(list, userLat = null, userLon = null) {
     clearMarkers();
     const ul = document.getElementById("restaurantList");
     ul.innerHTML = "";
 
     if (!list || list.length === 0) {
-            const li = document.createElement("li");
-            li.style.padding = "10px";
-            li.style.color = "#666";
-            li.style.fontSize = "14px";
-            li.style.textAlign = "center";
-            li.textContent = "📍 주변 1.5km 반경 내에 해당 음식점이 없습니다.";
+        const li = document.createElement("li");
+        li.style.padding = "10px";
+        li.style.color = "#666";
+        li.style.fontSize = "14px";
+        li.style.textAlign = "center";
+        li.textContent = "📍 주변 1.5km 반경 내에 해당 음식점이 없습니다.";
+        ul.appendChild(li);
+        document.getElementById("listCard").style.display = "block";
+        return;
+    }
 
-            ul.appendChild(li);
-            document.getElementById("listCard").style.display = "block";
-            return; // 🔴 여기서 종료
-        }
-
-    // 현재 지도 중심 좌표 (사용자 위치)
-    const center = map.getCenter();
-    const userLat = center.getLat();
-    const userLon = center.getLng();
+    // userLat/userLon이 없으면 지도 중심 사용
+    if (userLat === null || userLon === null) {
+        const center = map.getCenter();
+        userLat = center.getLat();
+        userLon = center.getLng();
+    }
 
     list.forEach((r, idx) => {
         const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
-
-        // 거리 계산 (미터)
         const distance = getDistanceFromLatLonInM(userLat, userLon, r.rest_y, r.rest_x);
 
         const marker = new kakao.maps.Marker({ position: pos, map });
         markers[idx] = marker;
-
-        const content = `<div style="padding:5px;font-size:12px;">
-                            <b>${r.rest_name}</b><br>
-                            행정동명: ${r.rest_dong ?? "-"}<br>
-                            지번: ${r.rest_old ?? "-"}<br>
-                            도로명: ${r.rest_addr ?? "-"}<br>
-                            리뷰 수: ${r.review_count ?? "-"}<br>
-                            거리: ${distance.toFixed(0)} m
-                         </div>`;
-        const infowindow = new kakao.maps.InfoWindow({ content });
-
-        kakao.maps.event.addListener(marker, 'mouseover', function() {
-            infowindow.open(map, marker);
-        });
-
-        kakao.maps.event.addListener(marker, 'mouseout', function() {
-            infowindow.close();
-        });
 
         const li = document.createElement("li");
         li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰) - ${distance.toFixed(0)} m`;
@@ -630,6 +611,7 @@ function renderRestaurants(list) {
 
     document.getElementById("listCard").style.display = "block";
 }
+
 
 
 /*************************************************
