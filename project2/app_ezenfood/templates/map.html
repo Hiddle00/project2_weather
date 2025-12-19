@@ -655,40 +655,56 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function geoBtnManager() {
-    // 로컬 변수로 현재 위치 저장
-    let currentLat = 35.8242; // 전주시청 위도
-    let currentLon = 127.148; // 전주시청 경도
+    // 1️⃣ 기본 위치: 전주시청
+    let currentLat = 35.8242;
+    let currentLon = 127.148;
 
-    // GPS 위치 가져오기 시도
+    // 2️⃣ GPS 위치 가져오기 시도
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
+            // 2-1. 성공 콜백
             (position) => {
                 currentLat = position.coords.latitude;
                 currentLon = position.coords.longitude;
                 console.log("GPS 위치 가져옴:", currentLat, currentLon);
-                // 지도 이동
-                map.setView([currentLat, currentLon], 15);
+
+                // 2-2. 카카오맵용 중심 이동 + 레벨 설정
+                const locPosition = new kakao.maps.LatLng(currentLat, currentLon);
+                map.setCenter(locPosition); // 지도 중심 이동
+                map.setLevel(15);           // 지도 확대/축소 레벨
             },
+            // 2-3. 실패 콜백
             (error) => {
                 console.warn("GPS 위치 가져오기 실패, 기본값 사용:", error.message);
-                map.setView([currentLat, currentLon], 15);
+
+                const locPosition = new kakao.maps.LatLng(currentLat, currentLon);
+                map.setCenter(locPosition);
+                map.setLevel(15);
             }
         );
     } else {
+        // 2-4. 브라우저가 geolocation 지원 안할 경우
         console.warn("브라우저가 geolocation 지원 안함, 기본값 사용");
-        map.setView([currentLat, currentLon], 15);
+
+        const locPosition = new kakao.maps.LatLng(currentLat, currentLon);
+        map.setCenter(locPosition);
+        map.setLevel(15);
     }
 
-    // 버튼 클릭 이벤트
+    // 3️⃣ 지도 위치 버튼 클릭 이벤트
     document.getElementById("geoBtn").addEventListener("click", () => {
-        // 클로저로 로컬 변수 참조
         console.log("버튼 클릭, 저장된 위치로 이동:", currentLat, currentLon);
-        map.setView([currentLat, currentLon], 15);
+
+        // 현재 저장된 위치로 지도 이동
+        const locPosition = new kakao.maps.LatLng(currentLat, currentLon);
+        map.setCenter(locPosition);
+        map.setLevel(15);
     });
 }
 
-// 페이지 로드 시 호출
+// 4️⃣ 페이지 로드 시 실행
 geoBtnManager();
+
 
 
 function showMyLocation() {
