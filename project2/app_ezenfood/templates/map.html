@@ -424,8 +424,11 @@ function moveMap(lat, lon, level = 4) {
  *************************************************/
 async function loadWeather(lat, lon) {
     try {
-        const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
-        return await res.json();
+        const res     = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+        const weather = await res.json();
+
+        updateWeatherIcon(weather);
+        return weather;
     } catch {
         return { temp: "-", rain: 0, humidity: 0, pty: 0, sky: 1, cloud: 0 };
     }
@@ -440,6 +443,26 @@ function renderWeatherUI(w) {
     document.getElementById("weatherCard").style.display = "block";
 }
 
+/*************************************************
+ * 날씨 아이콘
+ *************************************************/
+function updateWeatherIcon(weather){
+    const bgIcon = document.getElementById("weatherBgIcon");
+    const icon   = document.getElementById("weatherIcon");
+    // 안전하게 체크
+    if(!icon || !bgIcon) return;
+
+    if     (weather.pty === 1) { icon.src = "/static/icons/rain.svg";   bgIcon.src = "/static/icons/shower.svg";  }
+    else if(weather.pty === 2) { icon.src = "/static/icons/sleet.svg";  bgIcon.src = "/static/icons/sleet.svg";   }
+    else if(weather.pty === 3) { icon.src = "/static/icons/snow.svg";   bgIcon.src = "/static/icons/flurry.svg";  }
+    else if(weather.pty === 4) { icon.src = "/static/icons/shower.svg"; bgIcon.src = "/static/icons/drizzle.svg"; }
+    else 
+    {
+        if     (weather.sky === 1) { icon.src = "/static/icons/sun.svg";    bgIcon.src = "/static/icons/sun.svg";   }
+        else if(weather.sky === 3) { icon.src = "/static/icons/partly.svg"; bgIcon.src = "/static/icons/cloud.svg"; }
+        else if(weather.sky === 4) { icon.src = "/static/icons/cloud.svg";  bgIcon.src = "/static/icons/cloud.svg"; }
+    }
+}
 
 /*************************************************
  * 백엔드 추천 (사이드 카드)
