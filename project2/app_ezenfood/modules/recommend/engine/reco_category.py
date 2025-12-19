@@ -48,6 +48,7 @@ class CategoryRecommendEngine:
 
         # SCALER 학습 시 사용한 컬럼만 남기고, 누락 컬럼은 0으로 채우기
         allowed_cols = self.SCALER_MODEL.feature_names_in_
+        print(allowed_cols)
         df = pd.DataFrame([{col: features.get(col, 0) for col in allowed_cols}])
 
         # SCALER 변환

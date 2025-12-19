@@ -239,8 +239,8 @@ button:hover {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 250px;
-    max-height: 300px;       /* 높이 제한 후 스크롤 가능 */
+    width: 200px;
+    max-height: 200px;       /* 높이 제한 후 스크롤 가능 */
     overflow-y: auto;
     background: white;
     border: 1px solid #ccc;
