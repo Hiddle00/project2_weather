@@ -67,3 +67,41 @@ class MapDAO:
             # DB 조회 실패 시 에러 로그 출력
             print("[ERROR] DB 조회 실패:", e)
             return []  # 빈 리스트 반환
+
+
+    def search_restaurants_by_name(self, query, lat, lon, limit=30):
+        """
+        이름 기반 음식점 검색 (부분일치) + 좌표 기준 거리 계산
+        """
+        sql = """
+        SELECT rest_name, rest_x, rest_y, rest_dong, rest_addr, review_count, rest_old
+        FROM rest
+        WHERE rest_name LIKE %s COLLATE utf8mb4_general_ci
+        ORDER BY ABS(rest_y - %s) + ABS(rest_x - %s)
+        LIMIT %s
+        """
+        params = [f"%{query}%", lat, lon, limit]
+
+        try:
+            self.cursor.execute(sql, params)
+            results = self.cursor.fetchall()
+
+            # 거리 계산 (미터 단위)
+            for r in results:
+                r["distance"] = self._calculate_distance(lat, lon, r["rest_y"], r["rest_x"])
+
+            print(f"[DEBUG] search_restaurants_by_name '{query}' result count:", len(results))
+            return results
+        except Exception as e:
+            print(f"[ERROR] search_restaurants_by_name '{query}' 실패:", e)
+            return []
+
+
+    def _calculate_distance(self, lat1, lon1, lat2, lon2):
+        from math import sin, cos, sqrt, atan2, radians
+        R = 6371  # 지구 반지름 km
+        dLat = radians(lat2 - lat1)
+        dLon = radians(lon2 - lon1)
+        a = sin(dLat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dLon/2)**2
+        c = 2 * atan2(sqrt(a), sqrt(1-a))
+        return R * c * 1000  # m

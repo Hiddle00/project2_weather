@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify
 from .map_service import MapService
 import os
+from .map_dao import MapDAO
+
+map_dao = MapDAO()
 
 map_bp = Blueprint("map_bp", __name__)
 service = MapService()
@@ -31,3 +34,18 @@ def weather():
         return jsonify({"error": "lat, lon 필요"}), 400
     data = service.get_weather(lat, lon, WEATHER_KEY)
     return jsonify(data)
+
+# 음식점 검색 API
+@map_bp.route("/search_restaurant/")
+def search_restaurant():
+    query = request.args.get("q", "").strip()
+    lat = request.args.get("lat", type=float)
+    lon = request.args.get("lon", type=float)
+
+    if not query:
+        return jsonify({"error": "검색어가 없습니다"}), 400
+    if lat is None or lon is None:
+        return jsonify({"error": "lat, lon 필요"}), 400
+
+    restaurants = map_dao.search_restaurants_by_name(query, lat, lon)
+    return jsonify({"restaurants": restaurants})

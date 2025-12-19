@@ -25,6 +25,7 @@
                     <select id="searchType">
                         <option value="category">카테고리</option>
                         <option value="addr">지역</option>
+                        <option value="rest">음식점</option>
                     </select>
 
                     <input id="query" placeholder="검색어 입력">
@@ -543,18 +544,58 @@ function getSubIdFromName(name) {
 
 
 // 검색용 함수 수정
+// 개선된 검색용 함수
 async function searchRestaurants(food) {
-    const center = map.getCenter();
-    const subId = getSubIdFromName(food);
-    if (subId === null) return;
+    const query = food.trim();
+    if (!query) return;
 
-    const list = await fetchRestaurantsCached(
-        subId,
-        center.getLat(),
-        center.getLng()
-    );
-    renderRestaurants(list);
+    try {
+        let lat, lon;
+        let subId = getSubIdFromName(food); // 카테고리인지 먼저 확인
+
+        if (subId !== null) {
+            // 카테고리 검색 → 지도 중심 기준
+            const center = map.getCenter();
+            lat = center.getLat();
+            lon = center.getLng();
+        } else {
+            // 음식점 이름 검색 → geocode 시도
+            const pos = await geocodeAddress(query).catch(() => null);
+
+            if (pos) {
+                lat = pos.lat;
+                lon = pos.lon;
+            } else {
+                // 주소/카테고리 모두 실패 시 지도 중심 기준
+                lat = map.getCenter().getLat();
+                lon = map.getCenter().getLng();
+            }
+        }
+
+        // 서버 호출 시 subId가 없으면 음식점 이름으로 검색
+        let list;
+        if (subId !== null) {
+            // 카테고리 검색 → 캐시 사용
+            list = await fetchRestaurantsCached(subId, lat, lon);
+        } else {
+            // 음식점 이름 검색 → 캐시 사용하지 않고 바로 서버 검색
+            const res = await fetch(`/api/search_restaurant/?q=${encodeURIComponent(query)}&lat=${lat}&lon=${lon}`);
+            const data = await res.json();
+            list = data.restaurants || [];
+        }
+
+        // 음식점 렌더링 (거리 계산 포함)
+        renderRestaurants(list, lat, lon);
+
+        // 지도 중심 이동 (검색 위치 기준)
+        moveMap(lat, lon);
+
+    } catch (err) {
+        console.error("음식점 검색 실패:", err);
+        alert("음식점 검색 실패");
+    }
 }
+
 
 // 위도·경도 간 거리 계산 (미터 단위)
 function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
@@ -569,7 +610,7 @@ function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
     return R * c * 1000; // km → m
 }
 
-function renderRestaurants(list, userLat = null, userLon = null) {
+function renderRestaurants(list) {
     clearMarkers();
     const ul = document.getElementById("restaurantList");
     ul.innerHTML = "";
@@ -586,20 +627,39 @@ function renderRestaurants(list, userLat = null, userLon = null) {
         return;
     }
 
-    // userLat/userLon이 없으면 지도 중심 사용
-    if (userLat === null || userLon === null) {
-        const center = map.getCenter();
-        userLat = center.getLat();
-        userLon = center.getLng();
-    }
+    const center = map.getCenter();
+    const userLat = center.getLat();
+    const userLon = center.getLng();
 
     list.forEach((r, idx) => {
         const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
         const distance = getDistanceFromLatLonInM(userLat, userLon, r.rest_y, r.rest_x);
 
+        // 마커 생성
         const marker = new kakao.maps.Marker({ position: pos, map });
         markers[idx] = marker;
 
+        // 인포윈도우 내용
+        const content = `
+            <div style="padding:5px;font-size:12px;">
+                <b>${r.rest_name}</b><br>
+                행정동명: ${r.rest_dong ?? "-"}<br>
+                지번: ${r.rest_old ?? "-"}<br>
+                도로명: ${r.rest_addr ?? "-"}<br>
+                <br>
+            </div>
+        `;
+
+        const infowindow = new kakao.maps.InfoWindow({ content });
+
+        kakao.maps.event.addListener(marker, 'mouseover', function() {
+            infowindow.open(map, marker);
+        });
+        kakao.maps.event.addListener(marker, 'mouseout', function() {
+            infowindow.close();
+        });
+
+        // 리스트 아이템 생성
         const li = document.createElement("li");
         li.textContent = `${r.rest_name} (${r.review_count ?? 0} 리뷰) - ${distance.toFixed(0)} m`;
         li.onclick = () => {
@@ -611,6 +671,7 @@ function renderRestaurants(list, userLat = null, userLon = null) {
 
     document.getElementById("listCard").style.display = "block";
 }
+
 
 
 
