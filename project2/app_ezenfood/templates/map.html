@@ -610,6 +610,9 @@ function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
     return R * c * 1000; // km → m
 }
 
+// 전역 인포윈도우 하나만 생성
+const infoWindow = new kakao.maps.InfoWindow({ zIndex: 1 });
+
 function renderRestaurants(list) {
     clearMarkers();
     const ul = document.getElementById("restaurantList");
@@ -624,15 +627,18 @@ function renderRestaurants(list) {
         li.textContent = "📍 주변 1.5km 반경 내에 해당 음식점이 없습니다.";
         ul.appendChild(li);
         document.getElementById("listCard").style.display = "block";
-        return;
+        return; // 🔴 여기서 종료
     }
 
+    // 현재 지도 중심 좌표 (사용자 위치)
     const center = map.getCenter();
     const userLat = center.getLat();
     const userLon = center.getLng();
 
     list.forEach((r, idx) => {
         const pos = new kakao.maps.LatLng(r.rest_y, r.rest_x);
+
+        // 거리 계산 (미터)
         const distance = getDistanceFromLatLonInM(userLat, userLon, r.rest_y, r.rest_x);
 
         // 마커 생성
@@ -641,22 +647,21 @@ function renderRestaurants(list) {
 
         // 인포윈도우 내용
         const content = `
-            <div style="padding:5px;font-size:12px;">
+            <div style="padding:5px;font-size:12px; max-width:200px; word-wrap:break-word;">
                 <b>${r.rest_name}</b><br>
                 행정동명: ${r.rest_dong ?? "-"}<br>
                 지번: ${r.rest_old ?? "-"}<br>
-                도로명: ${r.rest_addr ?? "-"}<br>
-                <br>
+                도로명: ${r.rest_addr ?? "-"}
             </div>
         `;
 
-        const infowindow = new kakao.maps.InfoWindow({ content });
-
+        // 마커 이벤트 (전역 infoWindow 재사용)
         kakao.maps.event.addListener(marker, 'mouseover', function() {
-            infowindow.open(map, marker);
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
         });
         kakao.maps.event.addListener(marker, 'mouseout', function() {
-            infowindow.close();
+            infoWindow.close();
         });
 
         // 리스트 아이템 생성
@@ -671,6 +676,7 @@ function renderRestaurants(list) {
 
     document.getElementById("listCard").style.display = "block";
 }
+
 
 
 
