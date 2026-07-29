@@ -18,14 +18,14 @@ Tools: Git, VS Code
 실행 방법
 
 저장소 클론
-git clone [저장소 주소]
+git clone https://github.com/Hiddle00/project2_weather.git
 cd project2
 라이브러리 설치
 pip install -r app_ezenfood/requirements.txt
 실행
 python -m app_ezenfood.app
-
 프로젝트 루트 폴더(project2)에서 실행해야 합니다.
+
 담당 역할
 역할 | 담당자
 데이터 수집 및 전처리 | 최연흠
